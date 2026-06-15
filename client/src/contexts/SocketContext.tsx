@@ -50,7 +50,11 @@ export interface SocketContextType {
 export const SocketContext = createContext<SocketContextType | null>(null);
 
 const rawSocketUrl = (import.meta.env.VITE_SERVER_URL as string) || 'http://localhost:3001';
-const SOCKET_URL = rawSocketUrl && !rawSocketUrl.startsWith('http') ? `https://${rawSocketUrl}` : rawSocketUrl;
+let processedUrl = rawSocketUrl;
+if (processedUrl && !processedUrl.includes('.') && !processedUrl.includes('localhost')) {
+  processedUrl = `${processedUrl}.onrender.com`;
+}
+const SOCKET_URL = processedUrl && !processedUrl.startsWith('http') ? `https://${processedUrl}` : processedUrl;
 
 interface SocketProviderProps {
   children: React.ReactNode;
