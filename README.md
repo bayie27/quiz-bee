@@ -144,10 +144,10 @@ This project contains a [render.yaml](file:///c:/Users/User/Desktop/lock_in/quiz
     *   **Backend Web Service**: Running the Node/Socket.io server on the `free` tier.
     *   **Frontend Static Site**: Building and hosting the React client on the `free` tier.
 5. Fill in the environment variables (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HOST_PIN`) on Render when prompted.
-6. Once deployment is complete, access your platform using the following paths (replace `quizbee-frontend` with your actual Render frontend subdomain):
-    *   **Host Dashboard**: `https://quizbee-frontend.onrender.com/host`
-    *   **Participant Join**: `https://quizbee-frontend.onrender.com/join`
-    *   **Big Screen Display**: `https://quizbee-frontend.onrender.com/screen`
+6. Once deployment is complete, access your platform using the following live paths:
+    *   **Host Dashboard**: [https://quizbee-frontend-soky.onrender.com/host](https://quizbee-frontend-soky.onrender.com/host)
+    *   **Participant Join**: [https://quizbee-frontend-soky.onrender.com/join](https://quizbee-frontend-soky.onrender.com/join)
+    *   **Big Screen Display**: [https://quizbee-frontend-soky.onrender.com/screen](https://quizbee-frontend-soky.onrender.com/screen)
 
 ---
 
