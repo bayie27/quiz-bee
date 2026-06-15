@@ -47,7 +47,9 @@ module.exports = (io, socket) => {
       participantId: result.participant.id,
       sessionToken: result.participant.sessionToken,
       name: result.participant.name,
-      section: result.participant.section
+      section: result.participant.section,
+      avatar: result.participant.avatar,
+      accentColor: result.participant.accentColor
     });
 
     // Broadcast updated participant list to everyone (FR-47, FR-52)
@@ -86,6 +88,8 @@ module.exports = (io, socket) => {
       sessionToken: result.participant.sessionToken,
       name: result.participant.name,
       section: result.participant.section,
+      avatar: result.participant.avatar,
+      accentColor: result.participant.accentColor,
       restored: true,
       score: result.participant.score,
       streak: result.participant.streak,

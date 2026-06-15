@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
+const AVATARS = ['😎', '🤠', '👻', '👾', '🦊', '🐼', '🚀', '🧠'];
+const ACCENT_COLORS = ['#6C63FF', '#FF6584', '#10B981', '#F59E0B', '#06B6D4', '#FF5722', '#EC4899', '#6366F1'];
+
 export default function Join() {
   const [pin, setPin] = useState('');
   const [name, setName] = useState('');
   const [section, setSection] = useState('');
+  const [avatar, setAvatar] = useState('😎');
+  const [accentColor, setAccentColor] = useState('#6C63FF');
   const [error, setError] = useState('');
   const { socket, isConnected, setParticipant } = useSocket();
   const navigate = useNavigate();
@@ -69,12 +74,12 @@ export default function Join() {
       return;
     }
 
-    socket.emit('participant:join', { pin, name, section });
+    socket.emit('participant:join', { pin, name, section, avatar, accentColor });
   };
 
   return (
-    <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, padding: 'var(--space-xl) var(--space-md)' }}>
-      <div className="glass-card animate-fade-in-up">
+    <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, padding: 'var(--space-md)' }}>
+      <div className="glass-card animate-fade-in-up" style={{ margin: 'var(--space-md) 0' }}>
         {isRejoining ? (
           <div className="text-center animate-pulse" style={{ padding: 'var(--space-xl) 0' }}>
             <div style={{ fontSize: '3rem', marginBottom: 'var(--space-md)' }}>🔄</div>
@@ -111,6 +116,61 @@ export default function Join() {
                 required
                 style={inputStyle}
               />
+
+              {/* Avatar Selector */}
+              <div>
+                <label style={{ display: 'block', marginBottom: 'var(--space-xs)', fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                  Choose Avatar
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-sm)' }}>
+                  {AVATARS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setAvatar(emoji)}
+                      style={{
+                        fontSize: '1.75rem',
+                        padding: 'var(--space-xs) 0',
+                        borderRadius: 'var(--radius-md)',
+                        background: avatar === emoji ? 'var(--color-primary-dark)' : 'rgba(255, 255, 255, 0.05)',
+                        border: avatar === emoji ? '2px solid var(--color-primary-light)' : '2px solid rgba(255, 255, 255, 0.1)',
+                        cursor: 'pointer',
+                        transition: 'all var(--transition-fast)'
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Color Selector */}
+              <div>
+                <label style={{ display: 'block', marginBottom: 'var(--space-xs)', fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                  Choose Accent Color
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 'var(--space-xs)' }}>
+                  {ACCENT_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setAccentColor(color)}
+                      style={{
+                        height: '32px',
+                        borderRadius: 'var(--radius-full)',
+                        background: color,
+                        border: accentColor === color ? '2px solid white' : '1px solid rgba(255, 255, 255, 0.2)',
+                        boxShadow: accentColor === color ? `0 0 10px ${color}` : 'none',
+                        cursor: 'pointer',
+                        transform: accentColor === color ? 'scale(1.1)' : 'scale(1)',
+                        transition: 'all var(--transition-fast)'
+                      }}
+                      aria-label={`Accent color ${color}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
               <button type="submit" style={{ ...buttonStyle, opacity: isConnected ? 1 : 0.5 }} disabled={!isConnected}>
                 {isConnected ? 'Join' : 'Connecting...'}
               </button>
