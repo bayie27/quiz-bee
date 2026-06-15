@@ -1,3 +1,4 @@
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Participant Views
@@ -26,7 +27,11 @@ import Podium from './views/screen/Podium';
 
 import { SocketProvider } from './contexts/SocketContext';
 
-function MobileLayout({ children }) {
+interface MobileLayoutProps {
+  children: React.ReactNode;
+}
+
+function MobileLayout({ children }: MobileLayoutProps) {
   return <div className="mobile-layout">{children}</div>;
 }
 

@@ -13,7 +13,7 @@ export default function Branding() {
   const [accentColor, setAccentColor] = useState('#d946ef');
   const [logoUrl, setLogoUrl] = useState('');
   
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -38,13 +38,13 @@ export default function Branding() {
       .catch(err => console.error('Failed to load branding:', err));
   }, [isHostAuthenticated, navigate]);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
     }
   };
 
-  const handleSave = async (e) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
@@ -67,7 +67,7 @@ export default function Branding() {
         currentLogoUrl = uploadData.url;
         setLogoUrl(currentLogoUrl);
         setSelectedFile(null); // Clear file input
-      } catch (err) {
+      } catch (err: any) {
         alert(err.message);
         setIsUploading(false);
         setIsSaving(false);
@@ -97,7 +97,7 @@ export default function Branding() {
       } else {
         alert('Failed to save branding.');
       }
-    } catch (err) {
+    } catch (err: any) {
       alert('Error saving branding: ' + err.message);
     }
     
@@ -197,7 +197,7 @@ export default function Branding() {
   );
 }
 
-const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white', marginTop: '4px' };
-const labelStyle = { display: 'block', color: 'var(--text-secondary)', fontWeight: 'bold' };
-const primaryBtn = { background: 'var(--color-primary)', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem' };
-const navLink = { color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold', padding: '0 var(--space-sm)' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white', marginTop: '4px' };
+const labelStyle: React.CSSProperties = { display: 'block', color: 'var(--text-secondary)', fontWeight: 'bold' };
+const primaryBtn: React.CSSProperties = { background: 'var(--color-primary)', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem' };
+const navLink: React.CSSProperties = { color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold', padding: '0 var(--space-sm)' };

@@ -9,7 +9,10 @@ export default function ScreenReveal() {
   const [branding, setBranding] = useState({ primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef' });
 
   useEffect(() => {
-    fetch('/api/branding').then(res => res.json()).then(data => { if (data.id) setBranding(data); }).catch(console.error);
+    fetch('/api/branding')
+      .then(res => res.json())
+      .then(data => { if (data.id) setBranding(data); })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -23,7 +26,9 @@ export default function ScreenReveal() {
     if (!socket) return;
     const onQuestionLive = () => navigate('/screen/question');
     socket.on('question:live', onQuestionLive);
-    return () => socket.off('question:live', onQuestionLive);
+    return () => {
+      socket.off('question:live', onQuestionLive);
+    };
   }, [socket, navigate]);
 
   if (!revealData?.global || !currentQuestion) return <div style={{ background: '#0f172a', height: '100vh' }}></div>;
@@ -34,7 +39,7 @@ export default function ScreenReveal() {
   // Prepare data for recharts
   const chartData = Object.keys(distribution || {}).map(key => ({
     name: key,
-    count: distribution[key],
+    count: distribution[key] as number,
     isCorrect: key === correct || key.toLowerCase() === correct.toLowerCase()
   }));
 
@@ -77,7 +82,7 @@ export default function ScreenReveal() {
           
           {(type === 'mcq' || type === 'truefalse') && (
             <div style={{ fontSize: '2.5rem', color: 'var(--text-muted)', marginTop: '20px' }}>
-              {options.find(o => o.label === correct)?.text}
+              {options.find((o: any) => o.label === correct)?.text}
             </div>
           )}
         </div>

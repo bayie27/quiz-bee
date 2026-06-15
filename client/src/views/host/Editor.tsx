@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { apiPath } from '../../config/api';
@@ -18,11 +18,19 @@ const TRUE_FALSE_OPTIONS = [
   { label: 'False', text: 'False' }
 ];
 
+interface SortableQuestionItemProps {
+  id: string;
+  question: any;
+  isActive: boolean;
+  onClick: () => void;
+  onDelete: () => void;
+}
+
 // --- Sortable Item Component ---
-function SortableQuestionItem({ id, question, isActive, onClick, onDelete }) {
+function SortableQuestionItem({ id, question, isActive, onClick, onDelete }: SortableQuestionItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     padding: '10px',
@@ -59,11 +67,11 @@ export default function Editor() {
   const { isHostAuthenticated } = useSocket();
   const navigate = useNavigate();
 
-  const [questionSets, setQuestionSets] = useState([]);
+  const [questionSets, setQuestionSets] = useState<any[]>([]);
   const [selectedSetId, setSelectedSetId] = useState('');
   
-  const [questions, setQuestions] = useState([]);
-  const [activeQuestionId, setActiveQuestionId] = useState(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
 
   // Load Question Sets
   useEffect(() => {
@@ -91,13 +99,13 @@ export default function Editor() {
         .then(res => res.json())
         .then(data => {
           // Add temporary random IDs for dnd-kit if they don't have one
-          const qList = data.map(q => ({
+          const qList = data.map((q: any) => ({
             ...q,
             options: q.type === 'truefalse' ? TRUE_FALSE_OPTIONS : q.options,
             correct_answer: q.type === 'truefalse' && !['True', 'False'].includes(q.correct_answer)
               ? 'True'
               : q.correct_answer,
-            _dndId: q.id || Math.random().toString(36).substr(2, 9)
+            _dndId: q.id || Math.random().toString(36).substring(2, 11)
           }));
           setQuestions(qList);
           setActiveQuestionId(qList.length > 0 ? qList[0]._dndId : null);
@@ -135,13 +143,13 @@ export default function Editor() {
       } else {
         alert('Failed to save questions.');
       }
-    } catch (e) {
+    } catch (e: any) {
       alert('Error saving questions: ' + e.message);
     }
   };
 
   const handleAddQuestion = () => {
-    const newId = Math.random().toString(36).substr(2, 9);
+    const newId = Math.random().toString(36).substring(2, 11);
     const newQ = {
       _dndId: newId,
       text: 'New Question',
@@ -154,7 +162,7 @@ export default function Editor() {
     setActiveQuestionId(newId);
   };
 
-  const handleDeleteQuestion = (idToDelete) => {
+  const handleDeleteQuestion = (idToDelete: string) => {
     const updated = questions.filter(q => q._dndId !== idToDelete);
     setQuestions(updated);
     if (activeQuestionId === idToDelete) {
@@ -162,11 +170,11 @@ export default function Editor() {
     }
   };
 
-  const updateActiveQuestion = (updates) => {
+  const updateActiveQuestion = (updates: any) => {
     setQuestions(questions.map(q => q._dndId === activeQuestionId ? { ...q, ...updates } : q));
   };
 
-  const updateOption = (index, field, value) => {
+  const updateOption = (index: number, field: string, value: string) => {
     const activeQ = questions.find(q => q._dndId === activeQuestionId);
     if (!activeQ || !activeQ.options) return;
     const newOptions = [...activeQ.options];
@@ -174,7 +182,7 @@ export default function Editor() {
     updateActiveQuestion({ options: newOptions });
   };
 
-  const handleTypeChange = (type) => {
+  const handleTypeChange = (type: string) => {
     if (type === 'truefalse') {
       updateActiveQuestion({
         type,
@@ -206,9 +214,9 @@ export default function Editor() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       setQuestions((items) => {
         const oldIndex = items.findIndex(i => i._dndId === active.id);
         const newIndex = items.findIndex(i => i._dndId === over.id);
@@ -323,7 +331,7 @@ export default function Editor() {
                     <div style={{ marginTop: 'var(--space-md)' }}>
                       <label className="text-muted">Options</label>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                        {visibleOptions.map((opt, i) => (
+                        {visibleOptions.map((opt: any, i: number) => (
                           <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <input 
                               type="radio" 
@@ -380,7 +388,7 @@ export default function Editor() {
   );
 }
 
-const inputStyle = { padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' };
-const primaryBtn = { background: 'var(--color-primary)', color: 'white', padding: '8px 16px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
-const secondaryBtn = { background: 'var(--bg-secondary)', color: 'white', padding: '8px 16px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' };
-const navLink = { color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold', padding: '0 var(--space-sm)' };
+const inputStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' };
+const primaryBtn: React.CSSProperties = { background: 'var(--color-primary)', color: 'white', padding: '8px 16px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
+const secondaryBtn: React.CSSProperties = { background: 'var(--bg-secondary)', color: 'white', padding: '8px 16px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' };
+const navLink: React.CSSProperties = { color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold', padding: '0 var(--space-sm)' };

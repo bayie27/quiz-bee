@@ -3,12 +3,31 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Join from './Join';
 import { SocketContext } from '../../contexts/SocketContext';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock the socket context
 const mockSocketContext = {
-  socket: { emit: vi.fn(), on: vi.fn(), off: vi.fn() },
+  socket: { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as any,
   isConnected: true,
-  isJoined: false
+  isJoined: false,
+  participant: null,
+  setParticipant: vi.fn(),
+  lobbyData: { participants: [], count: 0 },
+  timer: { remaining: 0, paused: false },
+  currentQuestion: null,
+  revealData: null,
+  isGameEnded: false,
+  resultCard: null,
+  isHostAuthenticated: false,
+  setIsHostAuthenticated: vi.fn(),
+  hostState: null,
+  setHostState: vi.fn(),
+  hostAnswerCount: { answered: 0, total: 0, percentage: 0 },
+  hostPreview: null,
+  isScreenRegistered: false,
+  registerScreen: vi.fn(),
+  podiumData: null,
+  leaderboardData: null
 };
 
 const renderJoin = () => {

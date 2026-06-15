@@ -12,7 +12,10 @@ export default function Podium() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    fetch('/api/branding').then(res => res.json()).then(data => { if (data.id) setBranding(data); }).catch(console.error);
+    fetch('/api/branding')
+      .then(res => res.json())
+      .then(data => { if (data.id) setBranding(data); })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -23,7 +26,9 @@ export default function Podium() {
     if (!socket) return;
     const onLeaderboardShow = () => navigate('/screen/leaderboard');
     socket.on('leaderboard:show', onLeaderboardShow);
-    return () => socket.off('leaderboard:show', onLeaderboardShow);
+    return () => {
+      socket.off('leaderboard:show', onLeaderboardShow);
+    };
   }, [socket, navigate]);
 
   // Sequence the animations
@@ -53,10 +58,10 @@ export default function Podium() {
 
   if (!podiumData) return <div style={{ background: '#0f172a', height: '100vh' }}></div>;
 
-  const first = podiumData.find(p => p.rank === 1);
-  const second = podiumData.find(p => p.rank === 2);
-  const third = podiumData.find(p => p.rank === 3);
-  const runnersUp = podiumData.filter(p => p.rank > 3).sort((a, b) => b.rank - a.rank); // 5th, then 4th
+  const first = podiumData.find((p: any) => p.rank === 1);
+  const second = podiumData.find((p: any) => p.rank === 2);
+  const third = podiumData.find((p: any) => p.rank === 3);
+  const runnersUp = podiumData.filter((p: any) => p.rank > 3).sort((a: any, b: any) => b.rank - a.rank); // 5th, then 4th
 
   return (
     <div style={{ 
@@ -82,7 +87,7 @@ export default function Podium() {
               animate={{ opacity: 1, y: 0 }}
               style={{ display: 'flex', gap: '20px', marginBottom: '60px' }}
             >
-              {runnersUp.map(p => (
+              {runnersUp.map((p: any) => (
                 <div key={p.rank} className="glass-card" style={{ padding: '15px 30px', display: 'flex', alignItems: 'center', gap: '15px', borderBottom: `4px solid ${branding.accent_color_hex}` }}>
                   <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>{p.rank}th</span>
                   <span style={{ fontSize: '2rem' }}>{p.avatar || '😎'}</span>

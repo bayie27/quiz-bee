@@ -9,7 +9,10 @@ export default function ScreenQuestion() {
   const [branding, setBranding] = useState({ primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef' });
 
   useEffect(() => {
-    fetch('/api/branding').then(res => res.json()).then(data => { if (data.id) setBranding(data); }).catch(console.error);
+    fetch('/api/branding')
+      .then(res => res.json())
+      .then(data => { if (data.id) setBranding(data); })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -21,7 +24,9 @@ export default function ScreenQuestion() {
     if (!socket) return;
     const onQuestionSkipped = () => navigate('/screen/lobby'); // or just clear it? We just wait for next question.
     socket.on('question:skipped', onQuestionSkipped);
-    return () => socket.off('question:skipped', onQuestionSkipped);
+    return () => {
+      socket.off('question:skipped', onQuestionSkipped);
+    };
   }, [socket, navigate]);
 
   if (!currentQuestion) return <div style={{ background: '#0f172a', height: '100vh' }}></div>;
@@ -73,7 +78,7 @@ export default function ScreenQuestion() {
           margin: '0 auto',
           width: '100%'
         }}>
-          {options.map((opt, i) => (
+          {options.map((opt: any, i: number) => (
             <div key={i} className="glass-card" style={{ 
               display: 'flex', 
               alignItems: 'center', 

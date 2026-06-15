@@ -7,19 +7,24 @@ import { apiPath } from '../../config/api';
 export default function End() {
   const { resultCard, socket } = useSocket();
   const navigate = useNavigate();
-  const cardRef = useRef(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [branding, setBranding] = useState({ event_name: 'Quiz Bee', primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef', logo_url: '' });
 
   useEffect(() => {
-    fetch(apiPath('/api/branding')).then(res => res.json()).then(data => { if (data.id) setBranding(data); }).catch(console.error);
+    fetch(apiPath('/api/branding'))
+      .then(res => res.json())
+      .then(data => { if (data.id) setBranding(data); })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
     if (!socket) return;
     const onRoomReset = () => navigate('/join', { replace: true });
     socket.on('room:reset', onRoomReset);
-    return () => socket.off('room:reset', onRoomReset);
+    return () => {
+      socket.off('room:reset', onRoomReset);
+    };
   }, [socket, navigate]);
 
   const handleDownload = async () => {

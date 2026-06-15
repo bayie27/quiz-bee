@@ -72,5 +72,5 @@ export default function Reveal() {
   );
 }
 
-const flexRow = { display: 'flex', justifyContent: 'space-between', marginBottom: '4px' };
-const statBox = { background: 'rgba(0,0,0,0.3)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-md)', flex: 1 };
+const flexRow: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', marginBottom: '4px' };
+const statBox: React.CSSProperties = { background: 'rgba(0,0,0,0.3)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-md)', flex: 1 };

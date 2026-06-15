@@ -13,7 +13,7 @@ export default function Join() {
   useEffect(() => {
     if (!socket) return;
 
-    const onJoinSuccess = (data) => {
+    const onJoinSuccess = (data: any) => {
       setParticipant(data);
       if (data.restored) {
         // Reconnected into an active session, check state
@@ -27,7 +27,7 @@ export default function Join() {
       }
     };
 
-    const onJoinError = ({ reason }) => {
+    const onJoinError = ({ reason }: { reason: string }) => {
       setError(reason);
     };
 
@@ -40,11 +40,11 @@ export default function Join() {
     };
   }, [socket, navigate, setParticipant]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (!isConnected) {
+    if (!isConnected || !socket) {
       setError('Not connected to server.');
       return;
     }
@@ -92,7 +92,7 @@ export default function Join() {
   );
 }
 
-const inputStyle = {
+const inputStyle: React.CSSProperties = {
   padding: 'var(--space-sm) var(--space-md)',
   borderRadius: 'var(--radius-md)',
   border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -102,7 +102,7 @@ const inputStyle = {
   outline: 'none'
 };
 
-const buttonStyle = {
+const buttonStyle: React.CSSProperties = {
   padding: 'var(--space-md)',
   borderRadius: 'var(--radius-md)',
   background: 'var(--color-primary)',

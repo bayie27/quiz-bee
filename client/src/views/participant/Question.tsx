@@ -23,7 +23,7 @@ export default function Question() {
       setIsLocked(true);
     };
 
-    const onAnswerError = ({ reason }) => {
+    const onAnswerError = ({ reason }: { reason: string }) => {
       setIsSubmitting(false);
       setError(reason);
     };
@@ -44,8 +44,8 @@ export default function Question() {
     setError('');
   }, [currentQuestion?.questionId]);
 
-  const handleSubmit = (val) => {
-    if (isLocked || isSubmitting || timer.remaining <= 0 || timer.paused) return;
+  const handleSubmit = (val?: string) => {
+    if (isLocked || isSubmitting || timer.remaining <= 0 || timer.paused || !socket) return;
     setIsSubmitting(true);
     setError('');
     const finalAnswer = val !== undefined ? val : answer;
@@ -105,7 +105,7 @@ export default function Question() {
                 <button type="submit" disabled={disabled || !answer.trim()} style={{ ...buttonStyle, opacity: disabled ? 0.5 : 1 }}>Submit</button>
               </form>
             ) : (
-              currentQuestion.options?.map((opt, i) => (
+              currentQuestion.options?.map((opt: any, i: number) => (
                 <button
                   key={i}
                   onClick={() => handleSubmit(opt.label || opt.text)}
@@ -130,7 +130,7 @@ export default function Question() {
   );
 }
 
-const inputStyle = {
+const inputStyle: React.CSSProperties = {
   padding: 'var(--space-md)',
   borderRadius: 'var(--radius-md)',
   border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -141,7 +141,7 @@ const inputStyle = {
   width: '100%'
 };
 
-const buttonStyle = {
+const buttonStyle: React.CSSProperties = {
   padding: 'var(--space-md)',
   borderRadius: 'var(--radius-md)',
   color: 'white',

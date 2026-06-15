@@ -17,7 +17,7 @@ export default function Auth() {
   useEffect(() => {
     if (!socket) return;
     
-    const onAuthError = ({ reason }) => {
+    const onAuthError = ({ reason }: { reason: string }) => {
       setError(reason);
     };
 
@@ -28,9 +28,9 @@ export default function Auth() {
     };
   }, [socket]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isConnected) {
+    if (!isConnected || !socket) {
       setError('Not connected to server.');
       return;
     }
@@ -62,7 +62,7 @@ export default function Auth() {
   );
 }
 
-const inputStyle = {
+const inputStyle: React.CSSProperties = {
   padding: 'var(--space-sm) var(--space-md)',
   borderRadius: 'var(--radius-md)',
   border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -72,7 +72,7 @@ const inputStyle = {
   outline: 'none'
 };
 
-const buttonStyle = {
+const buttonStyle: React.CSSProperties = {
   padding: 'var(--space-md)',
   borderRadius: 'var(--radius-md)',
   background: 'var(--color-primary)',

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function Leaderboard() {
-  const { leaderboardData, currentQuestion, revealData, isGameEnded, participant, socket } = useSocket();
+  const { leaderboardData, revealData, isGameEnded, participant, socket } = useSocket();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,7 +14,9 @@ export default function Leaderboard() {
     if (!socket) return;
     const onQuestionLive = () => navigate('/question');
     socket.on('question:live', onQuestionLive);
-    return () => socket.off('question:live', onQuestionLive);
+    return () => {
+      socket.off('question:live', onQuestionLive);
+    };
   }, [socket, navigate]);
 
   if (!leaderboardData) return null;
@@ -26,7 +28,7 @@ export default function Leaderboard() {
       <h2 className="text-center text-primary" style={{ marginBottom: 'var(--space-md)' }}>Leaderboard</h2>
       
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-        {leaderboardData.map((p, idx) => (
+        {leaderboardData.map((p: any, idx: number) => (
           <div key={idx} className="glass-card animate-fade-in-up" style={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -53,7 +55,7 @@ export default function Leaderboard() {
       </div>
 
       {/* Fixed bottom bar for my score if I'm not in the top N */}
-      {myData && !leaderboardData.find(p => p.name === participant?.name) && (
+      {myData && !leaderboardData.find((p: any) => p.name === participant?.name) && (
         <div className="glass-card" style={{ marginTop: 'var(--space-md)', border: '1px solid var(--color-primary)' }}>
           <div className="text-muted text-center" style={{ fontSize: '0.8rem', marginBottom: '4px' }}>Your Rank</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

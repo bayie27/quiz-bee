@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function ScreenLobby() {
-  const { registerScreen, isScreenRegistered, lobbyData, currentQuestion, isGameEnded, socket } = useSocket();
+  const { registerScreen, isScreenRegistered, lobbyData, socket } = useSocket();
   const navigate = useNavigate();
   const [branding, setBranding] = useState({
     event_name: 'Quiz Bee Event',
@@ -35,7 +35,9 @@ export default function ScreenLobby() {
     if (!socket) return;
     const onGameStarted = () => navigate('/screen/question');
     socket.on('game:started', onGameStarted);
-    return () => socket.off('game:started', onGameStarted);
+    return () => {
+      socket.off('game:started', onGameStarted);
+    };
   }, [socket, navigate]);
 
   const joinUrl = `${window.location.protocol}//${window.location.host}/join`;
@@ -99,7 +101,7 @@ export default function ScreenLobby() {
             alignContent: 'start',
             flex: 1
           }}>
-            {(lobbyData?.participants || []).map((p, idx) => (
+            {(lobbyData?.participants || []).map((p: any, idx: number) => (
               <div key={idx} className="animate-fade-in-up" style={{ 
                 background: 'rgba(255,255,255,0.1)', 
                 padding: '15px 20px', 

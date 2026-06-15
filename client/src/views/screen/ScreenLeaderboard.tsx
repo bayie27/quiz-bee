@@ -8,7 +8,10 @@ export default function ScreenLeaderboard() {
   const [branding, setBranding] = useState({ primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef' });
 
   useEffect(() => {
-    fetch('/api/branding').then(res => res.json()).then(data => { if (data.id) setBranding(data); }).catch(console.error);
+    fetch('/api/branding')
+      .then(res => res.json())
+      .then(data => { if (data.id) setBranding(data); })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -54,7 +57,7 @@ export default function ScreenLeaderboard() {
         flex: 1,
         overflow: 'hidden'
       }}>
-        {leaderboardData.map((p, idx) => (
+        {leaderboardData.map((p: any, idx: number) => (
           <div key={idx} className="glass-card animate-fade-in-up" style={{ 
             display: 'flex', 
             alignItems: 'center', 

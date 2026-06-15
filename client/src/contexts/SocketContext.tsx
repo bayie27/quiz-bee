@@ -1,33 +1,77 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
-export const SocketContext = createContext(null);
+export interface LobbyData {
+  participants: any[];
+  count: number;
+  roomPin?: string;
+}
 
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+export interface Timer {
+  remaining: number;
+  paused: boolean;
+}
 
-export const SocketProvider = ({ children }) => {
-  const [socket, setSocket] = useState(null);
+export interface HostAnswerCount {
+  answered: number;
+  total: number;
+  percentage: number;
+}
+
+export interface SocketContextType {
+  socket: Socket | null;
+  isConnected: boolean;
+  participant: any;
+  setParticipant: React.Dispatch<React.SetStateAction<any>>;
+  lobbyData: LobbyData;
+  timer: Timer;
+  currentQuestion: any;
+  revealData: any;
+  isGameEnded: boolean;
+  resultCard: any;
+  isHostAuthenticated: boolean;
+  setIsHostAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
+  hostState: any;
+  setHostState: React.Dispatch<React.SetStateAction<any>>;
+  hostAnswerCount: HostAnswerCount;
+  hostPreview: any;
+  isScreenRegistered: boolean;
+  registerScreen: () => void;
+  podiumData: any;
+  leaderboardData: any;
+}
+
+export const SocketContext = createContext<SocketContextType | null>(null);
+
+const SOCKET_URL = (import.meta.env.VITE_SERVER_URL as string) || 'http://localhost:3001';
+
+interface SocketProviderProps {
+  children: React.ReactNode;
+}
+
+export const SocketProvider = ({ children }: SocketProviderProps) => {
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   
   // Participant State
-  const [participant, setParticipant] = useState(null);
-  const [lobbyData, setLobbyData] = useState({ participants: [], count: 0 });
-  const [timer, setTimer] = useState({ remaining: 0, paused: false });
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [revealData, setRevealData] = useState(null);
+  const [participant, setParticipant] = useState<any>(null);
+  const [lobbyData, setLobbyData] = useState<LobbyData>({ participants: [], count: 0 });
+  const [timer, setTimer] = useState<Timer>({ remaining: 0, paused: false });
+  const [currentQuestion, setCurrentQuestion] = useState<any>(null);
+  const [revealData, setRevealData] = useState<any>(null);
   const [isGameEnded, setIsGameEnded] = useState(false);
-  const [resultCard, setResultCard] = useState(null);
+  const [resultCard, setResultCard] = useState<any>(null);
   
   // Host State
   const [isHostAuthenticated, setIsHostAuthenticated] = useState(false);
-  const [hostState, setHostState] = useState(null);
-  const [hostAnswerCount, setHostAnswerCount] = useState({ answered: 0, total: 0, percentage: 0 });
-  const [hostPreview, setHostPreview] = useState(null);
+  const [hostState, setHostState] = useState<any>(null);
+  const [hostAnswerCount, setHostAnswerCount] = useState<HostAnswerCount>({ answered: 0, total: 0, percentage: 0 });
+  const [hostPreview, setHostPreview] = useState<any>(null);
 
   // Screen State
   const [isScreenRegistered, setIsScreenRegistered] = useState(false);
-  const [podiumData, setPodiumData] = useState(null);
-  const [leaderboardData, setLeaderboardData] = useState(null);
+  const [podiumData, setPodiumData] = useState<any>(null);
+  const [leaderboardData, setLeaderboardData] = useState<any>(null);
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
@@ -40,9 +84,9 @@ export const SocketProvider = ({ children }) => {
     newSocket.on('disconnect', () => setIsConnected(false));
 
     // Global listeners relevant to participants and host room status
-    newSocket.on('lobby:update', (data) => {
+    newSocket.on('lobby:update', (data: any) => {
       setLobbyData(data);
-      setHostState(prev => prev ? {
+      setHostState((prev: any) => prev ? {
         ...prev,
         participantCount: data.count,
         participants: data.participants,
@@ -50,19 +94,19 @@ export const SocketProvider = ({ children }) => {
       } : null);
     });
     
-    newSocket.on('timer:tick', ({ remaining }) => {
+    newSocket.on('timer:tick', ({ remaining }: { remaining: number }) => {
       setTimer(prev => ({ ...prev, remaining }));
     });
     
-    newSocket.on('timer:paused', ({ remaining }) => {
+    newSocket.on('timer:paused', ({ remaining }: { remaining: number }) => {
       setTimer({ remaining, paused: true });
     });
     
-    newSocket.on('timer:resumed', ({ remaining }) => {
+    newSocket.on('timer:resumed', ({ remaining }: { remaining: number }) => {
       setTimer({ remaining, paused: false });
     });
 
-    newSocket.on('question:live', (q) => {
+    newSocket.on('question:live', (q: any) => {
       setCurrentQuestion(q);
       setRevealData(null);
       setLeaderboardData(null);
@@ -75,20 +119,20 @@ export const SocketProvider = ({ children }) => {
       setTimer(prev => ({ ...prev, remaining: 0 }));
     });
 
-    newSocket.on('score:update', (data) => {
-      setRevealData(prev => ({ ...prev, ...data }));
+    newSocket.on('score:update', (data: any) => {
+      setRevealData((prev: any) => ({ ...prev, ...data }));
     });
     
-    newSocket.on('answer:revealed', (data) => {
-      setRevealData(prev => ({ ...prev, global: data }));
+    newSocket.on('answer:revealed', (data: any) => {
+      setRevealData((prev: any) => ({ ...prev, global: data }));
     });
 
-    newSocket.on('game:started', (data) => {
+    newSocket.on('game:started', (data: any) => {
       setIsGameEnded(false);
       setResultCard(null);
       setPodiumData(null);
       setLeaderboardData(null);
-      setHostState(prev => prev ? {
+      setHostState((prev: any) => prev ? {
         ...prev,
         status: 'active',
         participantCount: data?.participantCount ?? prev.participantCount
@@ -97,28 +141,28 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on('game:ended', () => {
       setIsGameEnded(true);
-      setHostState(prev => prev ? { ...prev, status: 'ended' } : null);
+      setHostState((prev: any) => prev ? { ...prev, status: 'ended' } : null);
     });
 
-    newSocket.on('result:card', (data) => {
+    newSocket.on('result:card', (data: any) => {
       setResultCard(data);
     });
 
     // Host listeners
-    newSocket.on('host:auth_success', (data) => {
+    newSocket.on('host:auth_success', (data: any) => {
       setIsHostAuthenticated(true);
       setHostState(data);
     });
 
-    newSocket.on('host:answer_count', (data) => {
+    newSocket.on('host:answer_count', (data: any) => {
       setHostAnswerCount(data);
     });
 
-    newSocket.on('question:preview', (preview) => {
+    newSocket.on('question:preview', (preview: any) => {
       setHostPreview(preview);
     });
 
-    newSocket.on('host:room_reset', (data) => {
+    newSocket.on('host:room_reset', (data: any) => {
       setHostState({
         ...data,
         participantCount: data.participantCount || 0,
@@ -145,7 +189,7 @@ export const SocketProvider = ({ children }) => {
       setIsScreenRegistered(true);
     });
 
-    newSocket.on('screen:state', (state) => {
+    newSocket.on('screen:state', (state: any) => {
       setIsScreenRegistered(true);
       setLobbyData({
         participants: state.participants,
@@ -158,15 +202,15 @@ export const SocketProvider = ({ children }) => {
       }
     });
 
-    newSocket.on('podium:play', (data) => {
+    newSocket.on('podium:play', (data: any) => {
       setPodiumData(data.top5);
     });
 
-    newSocket.on('leaderboard:show', (data) => {
+    newSocket.on('leaderboard:show', (data: any) => {
       setLeaderboardData(data.top);
     });
 
-    newSocket.on('room:reset', (data = {}) => {
+    newSocket.on('room:reset', (data: any = {}) => {
       setLobbyData({
         participants: data.participants || [],
         count: data.participantCount || 0,
@@ -181,7 +225,7 @@ export const SocketProvider = ({ children }) => {
       setPodiumData(null);
       setLeaderboardData(null);
       setIsGameEnded(false);
-      setHostState(prev => prev ? {
+      setHostState((prev: any) => prev ? {
         ...prev,
         status: 'lobby',
         roomPin: data.roomPin || prev.roomPin,
@@ -190,7 +234,9 @@ export const SocketProvider = ({ children }) => {
       } : null);
     });
 
-    return () => newSocket.close();
+    return () => {
+      newSocket.close();
+    };
   }, []);
 
   const registerScreen = () => {

@@ -6,7 +6,7 @@ import { apiPath } from '../../config/api';
 export default function Dashboard() {
   const { isHostAuthenticated, hostState, socket, hostAnswerCount, hostPreview, timer, isGameEnded } = useSocket();
   const navigate = useNavigate();
-  const [questionSets, setQuestionSets] = useState([]);
+  const [questionSets, setQuestionSets] = useState<any[]>([]);
   const [selectedSet, setSelectedSet] = useState('');
 
   useEffect(() => {
@@ -24,17 +24,17 @@ export default function Dashboard() {
 
   const handleStartGame = () => {
     if (!selectedSet) return alert('Select a question set');
-    socket.emit('host:start_game', { questionSetId: selectedSet });
+    if (socket) socket.emit('host:start_game', { questionSetId: selectedSet });
   };
 
-  const handleLaunch = () => socket.emit('host:launch_question');
-  const handlePause = () => socket.emit('host:pause_timer');
-  const handleResume = () => socket.emit('host:resume_timer');
-  const handleReveal = () => socket.emit('host:reveal_answer');
-  const handleSkip = () => socket.emit('host:skip_question');
-  const handleLeaderboard = () => socket.emit('host:show_leaderboard');
-  const handleEndGame = () => socket.emit('host:end_game');
-  const handleReset = () => socket.emit('host:reset_room');
+  const handleLaunch = () => socket?.emit('host:launch_question');
+  const handlePause = () => socket?.emit('host:pause_timer');
+  const handleResume = () => socket?.emit('host:resume_timer');
+  const handleReveal = () => socket?.emit('host:reveal_answer');
+  const handleSkip = () => socket?.emit('host:skip_question');
+  const handleLeaderboard = () => socket?.emit('host:show_leaderboard');
+  const handleEndGame = () => socket?.emit('host:end_game');
+  const handleReset = () => socket?.emit('host:reset_room');
 
   const isActiveGame = hostState?.status === 'active';
   const gameEnded = isGameEnded || hostState?.status === 'ended';
@@ -167,7 +167,7 @@ export default function Dashboard() {
   );
 }
 
-const navLink = { color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold', padding: '0 var(--space-sm)' };
-const primaryBtn = { background: 'var(--color-primary)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
-const secondaryBtn = { background: 'var(--bg-secondary)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontWeight: 'bold' };
-const dangerBtn = { background: 'var(--color-danger)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
+const navLink: React.CSSProperties = { color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold', padding: '0 var(--space-sm)' };
+const primaryBtn: React.CSSProperties = { background: 'var(--color-primary)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
+const secondaryBtn: React.CSSProperties = { background: 'var(--bg-secondary)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontWeight: 'bold' };
+const dangerBtn: React.CSSProperties = { background: 'var(--color-danger)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
