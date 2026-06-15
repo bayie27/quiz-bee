@@ -85,7 +85,7 @@ export default function Editor() {
   const fetchSets = () => {
     fetch(apiPath('/api/question-sets'))
       .then(res => res.json())
-      .then(data => setQuestionSets(data))
+      .then(data => setQuestionSets(Array.isArray(data) ? data : []))
       .catch(err => console.error(err));
   };
 
