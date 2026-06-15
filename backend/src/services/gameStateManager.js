@@ -65,7 +65,7 @@ class GameStateManager {
     };
 
     // Room config (fetched from Supabase room_settings on boot)
-    this.roomConfig = {
+    this.roomConfig = this.roomConfig || {
       hostPin: '1234',
       roomPin: '000000',
       maxParticipants: 500,
