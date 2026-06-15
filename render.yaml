@@ -1,0 +1,47 @@
+# Render Blueprint configuration for Quiz Bee deployment
+# For detailed reference: https://render.com/docs/blueprints
+
+services:
+  # Node.js + Express + Socket.io Backend Service
+  - type: web
+    name: quizbee-backend
+    runtime: node
+    plan: starter
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: HOST_PIN
+        sync: false
+        value: "1234" # UPDATE with your desired host dashboard login PIN
+      - key: SUPABASE_URL
+        sync: false
+        value: "https://your-supabase-project.supabase.co" # UPDATE with your Supabase project URL
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+        value: "your-supabase-service-role-key-here" # UPDATE with your Supabase service role API key
+      - key: MAX_PARTICIPANTS
+        value: "1000"
+      - key: REJOIN_GRACE_PERIOD_MS
+        value: "10000"
+
+  # React + Vite + Tailwind CSS Frontend Static Site
+  - type: web
+    name: quizbee-frontend
+    runtime: static
+    plan: free
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      # Rewrite rule to support client-side routing (Single Page App)
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_SERVER_URL
+        value: "https://quizbee-backend.onrender.com" # UPDATE with your deployed backend URL if different
