@@ -16,13 +16,10 @@ services:
       - key: PORT
         value: "3001"
       - key: HOST_PIN
-        sync: false
         value: "1234" # UPDATE with your desired host dashboard login PIN
       - key: SUPABASE_URL
-        sync: false
         value: "https://your-supabase-project.supabase.co" # UPDATE with your Supabase project URL
       - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
         value: "your-supabase-service-role-key-here" # UPDATE with your Supabase service role API key
       - key: MAX_PARTICIPANTS
         value: "1000"
