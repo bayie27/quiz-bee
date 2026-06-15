@@ -10,6 +10,8 @@ export default function Join() {
   const { socket, isConnected, setParticipant } = useSocket();
   const navigate = useNavigate();
 
+  const [isRejoining, setIsRejoining] = useState(false);
+
   useEffect(() => {
     if (!socket) return;
 
@@ -29,16 +31,34 @@ export default function Join() {
 
     const onJoinError = ({ reason }: { reason: string }) => {
       setError(reason);
+      setIsRejoining(false);
+      localStorage.removeItem('quizbee_session');
     };
 
     socket.on('join:success', onJoinSuccess);
     socket.on('join:error', onJoinError);
 
+    // Auto-rejoin attempt if session exists in localStorage
+    if (isConnected) {
+      const savedSession = localStorage.getItem('quizbee_session');
+      if (savedSession) {
+        try {
+          const { name, section, sessionToken } = JSON.parse(savedSession);
+          if (name && section && sessionToken) {
+            setIsRejoining(true);
+            socket.emit('participant:rejoin', { name, section, sessionToken });
+          }
+        } catch (e) {
+          localStorage.removeItem('quizbee_session');
+        }
+      }
+    }
+
     return () => {
       socket.off('join:success', onJoinSuccess);
       socket.off('join:error', onJoinError);
     };
-  }, [socket, navigate, setParticipant]);
+  }, [socket, isConnected, navigate, setParticipant]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,38 +75,48 @@ export default function Join() {
   return (
     <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, padding: 'var(--space-xl) var(--space-md)' }}>
       <div className="glass-card animate-fade-in-up">
-        <h1 className="text-center" style={{ marginBottom: 'var(--space-md)' }}>Join Game</h1>
-        {error && <p className="text-danger text-center" style={{ marginBottom: 'var(--space-md)' }}>{error}</p>}
-        
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-          <input
-            type="number"
-            placeholder="Room PIN"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            required
-            style={inputStyle}
-          />
-          <input
-            type="text"
-            placeholder="Display Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            style={inputStyle}
-          />
-          <input
-            type="text"
-            placeholder="Section (e.g. BSCS-3A)"
-            value={section}
-            onChange={(e) => setSection(e.target.value)}
-            required
-            style={inputStyle}
-          />
-          <button type="submit" style={{ ...buttonStyle, opacity: isConnected ? 1 : 0.5 }} disabled={!isConnected}>
-            {isConnected ? 'Join' : 'Connecting...'}
-          </button>
-        </form>
+        {isRejoining ? (
+          <div className="text-center animate-pulse" style={{ padding: 'var(--space-xl) 0' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 'var(--space-md)' }}>🔄</div>
+            <h2>Restoring Session...</h2>
+            <p className="text-muted" style={{ marginTop: 'var(--space-sm)' }}>Reconnecting to the game lobby...</p>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-center" style={{ marginBottom: 'var(--space-md)' }}>Join Game</h1>
+            {error && <p className="text-danger text-center" style={{ marginBottom: 'var(--space-md)' }}>{error}</p>}
+            
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+              <input
+                type="number"
+                placeholder="Room PIN"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                required
+                style={inputStyle}
+              />
+              <input
+                type="text"
+                placeholder="Display Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                style={inputStyle}
+              />
+              <input
+                type="text"
+                placeholder="Section (e.g. BSCS-3A)"
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+                required
+                style={inputStyle}
+              />
+              <button type="submit" style={{ ...buttonStyle, opacity: isConnected ? 1 : 0.5 }} disabled={!isConnected}>
+                {isConnected ? 'Join' : 'Connecting...'}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

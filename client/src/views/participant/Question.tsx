@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function Question() {
-  const { socket, currentQuestion, timer, revealData, isGameEnded } = useSocket();
+  const { socket, currentQuestion, timer, revealData, isGameEnded, playTick } = useSocket();
   const navigate = useNavigate();
   const [answer, setAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +43,13 @@ export default function Question() {
     setAnswer('');
     setError('');
   }, [currentQuestion?.questionId]);
+
+  // Play tick sound for the last 5 seconds of countdown
+  useEffect(() => {
+    if (timer.remaining <= 5 && timer.remaining > 0 && !isLocked && !timer.paused) {
+      playTick();
+    }
+  }, [timer.remaining, timer.paused, isLocked, playTick]);
 
   const handleSubmit = (val?: string) => {
     if (isLocked || isSubmitting || timer.remaining <= 0 || timer.paused || !socket) return;

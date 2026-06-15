@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useAudio } from '../hooks/useAudio';
 
 export interface LobbyData {
   participants: any[];
@@ -39,6 +40,11 @@ export interface SocketContextType {
   registerScreen: () => void;
   podiumData: any;
   leaderboardData: any;
+  isMuted: boolean;
+  setIsMuted: (muted: boolean) => void;
+  playTick: () => void;
+  playChime: () => void;
+  playBuzz: () => void;
 }
 
 export const SocketContext = createContext<SocketContextType | null>(null);
@@ -210,7 +216,27 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       setLeaderboardData(data.top);
     });
 
+    newSocket.on('join:success', (data: any) => {
+      // Only set session data if this is a participant join event
+      if (data.sessionToken) {
+        setParticipant(data);
+        localStorage.setItem('quizbee_session', JSON.stringify({
+          name: data.name,
+          section: data.section,
+          sessionToken: data.sessionToken
+        }));
+      }
+    });
+
+    newSocket.on('participant:kicked', () => {
+      localStorage.removeItem('quizbee_session');
+      setParticipant(null);
+      alert('You have been kicked from the game.');
+      window.location.href = '/join';
+    });
+
     newSocket.on('room:reset', (data: any = {}) => {
+      localStorage.removeItem('quizbee_session');
       setLobbyData({
         participants: data.participants || [],
         count: data.participantCount || 0,
@@ -243,6 +269,8 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
     if (socket) socket.emit('screen:register');
   };
 
+  const { isMuted, setIsMuted, playTick, playChime, playBuzz } = useAudio();
+
   return (
     <SocketContext.Provider value={{
       socket,
@@ -264,7 +292,12 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       isScreenRegistered,
       registerScreen,
       podiumData,
-      leaderboardData
+      leaderboardData,
+      isMuted,
+      setIsMuted,
+      playTick,
+      playChime,
+      playBuzz
     }}>
       {children}
     </SocketContext.Provider>

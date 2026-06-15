@@ -214,6 +214,194 @@ export default function Editor() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const handleExportJSON = () => {
+    if (questions.length === 0) return alert('No questions to export');
+    // Remove temporary _dndId for a clean export
+    const cleanQuestions = questions.map(({ _dndId, id, ...rest }) => rest);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanQuestions, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `question_set_${selectedSetId}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleExportCSV = () => {
+    if (questions.length === 0) return alert('No questions to export');
+    const headers = ['text', 'type', 'timer_seconds', 'correct_answer', 'option_a', 'option_b', 'option_c', 'option_d'];
+    const rows = questions.map(q => {
+      const optA = q.options?.[0]?.text || '';
+      const optB = q.options?.[1]?.text || '';
+      const optC = q.options?.[2]?.text || '';
+      const optD = q.options?.[3]?.text || '';
+      
+      const escape = (val: any) => `"${String(val || '').replace(/"/g, '""')}"`;
+      
+      return [
+        escape(q.text),
+        escape(q.type),
+        q.timer_seconds || 30,
+        escape(q.correct_answer),
+        escape(optA),
+        escape(optB),
+        escape(optC),
+        escape(optD)
+      ].join(',');
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(','), ...rows].join('\n'));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", csvContent);
+    downloadAnchor.setAttribute("download", `question_set_${selectedSetId}.csv`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const parseCSVLine = (line: string) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++; // skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      try {
+        let importedQuestions: any[] = [];
+        
+        if (file.name.endsWith('.json')) {
+          const parsed = JSON.parse(content);
+          if (!Array.isArray(parsed)) throw new Error('Root must be a JSON array of questions');
+          importedQuestions = parsed;
+        } else if (file.name.endsWith('.csv')) {
+          const lines = content.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
+          if (lines.length <= 1) throw new Error('CSV is empty or missing headers');
+          
+          const headers = parseCSVLine(lines[0]);
+          const textIdx = headers.indexOf('text');
+          const typeIdx = headers.indexOf('type');
+          const timerIdx = headers.indexOf('timer_seconds');
+          const correctIdx = headers.indexOf('correct_answer');
+          const optAIdx = headers.indexOf('option_a');
+          const optBIdx = headers.indexOf('option_b');
+          const optCIdx = headers.indexOf('option_c');
+          const optDIdx = headers.indexOf('option_d');
+          
+          if (textIdx === -1 || typeIdx === -1 || correctIdx === -1) {
+            throw new Error('CSV must contain at least "text", "type", and "correct_answer" headers');
+          }
+          
+          for (let i = 1; i < lines.length; i++) {
+            const cols = parseCSVLine(lines[i]);
+            if (cols.length < 3 || !cols[textIdx]) continue;
+            
+            const type = cols[typeIdx] || 'mcq';
+            const timer_seconds = parseInt(cols[timerIdx] || '30');
+            const text = cols[textIdx] || '';
+            const correct_answer = cols[correctIdx] || '';
+            
+            let options = null;
+            if (type === 'mcq') {
+               options = [
+                 { label: 'A', text: cols[optAIdx] || 'Option A' },
+                 { label: 'B', text: cols[optBIdx] || 'Option B' },
+                 { label: 'C', text: cols[optCIdx] || 'Option C' },
+                 { label: 'D', text: cols[optDIdx] || 'Option D' }
+               ];
+            } else if (type === 'truefalse') {
+               options = [
+                 { label: 'True', text: 'True' },
+                 { label: 'False', text: 'False' }
+               ];
+            }
+            
+            importedQuestions.push({
+              text,
+              type,
+              timer_seconds,
+              correct_answer,
+              options
+            });
+          }
+        } else {
+          throw new Error('Unsupported file format. Please upload a .json or .csv file');
+        }
+        
+        const validated: any[] = [];
+        for (let i = 0; i < importedQuestions.length; i++) {
+          const q = importedQuestions[i];
+          const rowNum = i + 1;
+          
+          if (!q.text || typeof q.text !== 'string' || !q.text.trim()) {
+            throw new Error(`Question ${rowNum}: Question text is required`);
+          }
+          if (!['mcq', 'truefalse', 'identification'].includes(q.type)) {
+            throw new Error(`Question ${rowNum}: Invalid type "${q.type}". Must be mcq, truefalse, or identification`);
+          }
+          if (isNaN(q.timer_seconds) || q.timer_seconds <= 0) {
+            throw new Error(`Question ${rowNum}: timer_seconds must be a positive integer`);
+          }
+          if (!q.correct_answer || typeof q.correct_answer !== 'string' || !q.correct_answer.trim()) {
+            throw new Error(`Question ${rowNum}: correct_answer is required`);
+          }
+          
+          if (q.type === 'mcq') {
+            if (!Array.isArray(q.options) || q.options.length !== 4) {
+              throw new Error(`Question ${rowNum} (mcq): options must be an array of exactly 4 elements`);
+            }
+            const validLabels = q.options.map((o: any) => o.label);
+            if (!validLabels.includes(q.correct_answer)) {
+              throw new Error(`Question ${rowNum} (mcq): correct_answer must match one of the option labels (A, B, C, or D)`);
+            }
+          } else if (q.type === 'truefalse') {
+            if (!['True', 'False'].includes(q.correct_answer)) {
+              throw new Error(`Question ${rowNum} (truefalse): correct_answer must be either "True" or "False"`);
+            }
+          }
+          
+          validated.push({
+            ...q,
+            _dndId: Math.random().toString(36).substring(2, 11)
+          });
+        }
+        
+        setQuestions([...questions, ...validated]);
+        if (validated.length > 0) {
+          setActiveQuestionId(validated[0]._dndId);
+        }
+        alert(`Successfully imported ${validated.length} questions! Click "Save All Changes" to persist.`);
+      } catch (err: any) {
+        alert(`Import Failed: ${err.message}`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -257,7 +445,22 @@ export default function Editor() {
           <button onClick={handleCreateSet} style={secondaryBtn}>+ New Set</button>
           
           <div style={{ flex: 1 }}></div>
-          {selectedSetId && <button onClick={handleSaveQuestions} style={primaryBtn}>Save All Changes</button>}
+          {selectedSetId && (
+            <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+              <button onClick={handleExportJSON} style={secondaryBtn}>Export JSON</button>
+              <button onClick={handleExportCSV} style={secondaryBtn}>Export CSV</button>
+              <label style={{ ...secondaryBtn, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', margin: 0 }}>
+                Import File
+                <input 
+                  type="file" 
+                  accept=".json,.csv" 
+                  onChange={handleFileImport} 
+                  style={{ display: 'none' }} 
+                />
+              </label>
+              <button onClick={handleSaveQuestions} style={primaryBtn}>Save All Changes</button>
+            </div>
+          )}
         </div>
 
         {/* Editor Grid */}

@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function Reveal() {
-  const { revealData, currentQuestion, isGameEnded, leaderboardData } = useSocket();
+  const { revealData, currentQuestion, isGameEnded, leaderboardData, playChime, playBuzz } = useSocket();
   const navigate = useNavigate();
+  const playedRef = useRef<string | null>(null);
 
   // If new question starts, go to question
   useEffect(() => {
@@ -15,6 +16,18 @@ export default function Reveal() {
     if (leaderboardData) navigate('/leaderboard');
     if (isGameEnded) navigate('/end');
   }, [revealData, currentQuestion, isGameEnded, leaderboardData, navigate]);
+
+  // Play correctness chime or incorrect buzzer once per question reveal
+  useEffect(() => {
+    if (revealData && currentQuestion && playedRef.current !== currentQuestion.questionId) {
+      playedRef.current = currentQuestion.questionId;
+      if (revealData.isCorrect === true) {
+        playChime();
+      } else {
+        playBuzz();
+      }
+    }
+  }, [revealData, currentQuestion, playChime, playBuzz]);
 
   if (!revealData) return null;
 

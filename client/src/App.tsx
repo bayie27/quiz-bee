@@ -25,14 +25,67 @@ import ScreenReveal from './views/screen/ScreenReveal';
 import ScreenLeaderboard from './views/screen/ScreenLeaderboard';
 import Podium from './views/screen/Podium';
 
-import { SocketProvider } from './contexts/SocketContext';
+import { SocketProvider, useSocket } from './contexts/SocketContext';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
 }
 
 function MobileLayout({ children }: MobileLayoutProps) {
-  return <div className="mobile-layout">{children}</div>;
+  const { isMuted, setIsMuted } = useSocket();
+
+  return (
+    <div className="mobile-layout">
+      <header style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 'var(--space-sm) var(--space-md)',
+        background: 'rgba(26, 26, 46, 0.6)',
+        backdropFilter: 'blur(8px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+        zIndex: 10
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', fontWeight: 'bold', fontFamily: 'var(--font-heading)' }}>
+          <span style={{ fontSize: '1.25rem' }}>🐝</span>
+          <span style={{ background: 'linear-gradient(135deg, var(--color-primary-light), var(--color-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            QuizBee
+          </span>
+        </div>
+        <button
+          onClick={() => setIsMuted(!isMuted)}
+          aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
+          style={{
+            background: 'var(--bg-glass)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 'var(--radius-full)',
+            width: '36px',
+            height: '36px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1rem',
+            color: 'white',
+            cursor: 'pointer',
+            transition: 'all var(--transition-fast)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-glass-hover)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'var(--bg-glass)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          {isMuted ? '🔇' : '🔊'}
+        </button>
+      </header>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function App() {
