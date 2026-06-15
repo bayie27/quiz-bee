@@ -141,9 +141,13 @@ This project contains a [render.yaml](file:///c:/Users/User/Desktop/lock_in/quiz
 2. Go to your **Render Dashboard > New > Blueprint**.
 3. Connect your repository.
 4. Render will read the `render.yaml` configuration and automatically deploy:
-    *   **Backend Web Service**: Running the Node/Socket.io server on the `starter` tier.
+    *   **Backend Web Service**: Running the Node/Socket.io server on the `free` tier.
     *   **Frontend Static Site**: Building and hosting the React client on the `free` tier.
 5. Fill in the environment variables (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HOST_PIN`) on Render when prompted.
+6. Once deployment is complete, access your platform using the following paths (replace `quizbee-frontend` with your actual Render frontend subdomain):
+    *   **Host Dashboard**: `https://quizbee-frontend.onrender.com/host`
+    *   **Participant Join**: `https://quizbee-frontend.onrender.com/join`
+    *   **Big Screen Display**: `https://quizbee-frontend.onrender.com/screen`
 
 ---
 

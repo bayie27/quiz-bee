@@ -49,7 +49,8 @@ export interface SocketContextType {
 
 export const SocketContext = createContext<SocketContextType | null>(null);
 
-const SOCKET_URL = (import.meta.env.VITE_SERVER_URL as string) || 'http://localhost:3001';
+const rawSocketUrl = (import.meta.env.VITE_SERVER_URL as string) || 'http://localhost:3001';
+const SOCKET_URL = rawSocketUrl && !rawSocketUrl.startsWith('http') ? `https://${rawSocketUrl}` : rawSocketUrl;
 
 interface SocketProviderProps {
   children: React.ReactNode;

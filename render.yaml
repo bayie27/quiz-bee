@@ -40,4 +40,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_SERVER_URL
-        value: "https://quizbee-backend.onrender.com" # UPDATE with your deployed backend URL if different
+        fromService:
+          name: quizbee-backend
+          type: web
+          property: host
