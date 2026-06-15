@@ -113,6 +113,7 @@ function App() {
         <Route path="/host/game" element={<Game />} />
 
         {/* 10.3 Big Screen Screens (Full Width) */}
+        <Route path="/screen" element={<Navigate to="/screen/lobby" replace />} />
         <Route path="/screen/lobby" element={<ScreenLobby />} />
         <Route path="/screen/question" element={<ScreenQuestion />} />
         <Route path="/screen/reveal" element={<ScreenReveal />} />
