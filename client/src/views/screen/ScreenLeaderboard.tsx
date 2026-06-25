@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import AvatarBadge from '../../components/AvatarBadge';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
@@ -20,12 +21,12 @@ export default function ScreenLeaderboard() {
 
   return (
     <main className="screen-shell">
-      <header className="screen-header"><h1 className="screen-title">Top Participants</h1><div className="screen-meta">Live Rank</div></header>
+      <header className="screen-header"><h1 className="screen-title">Top Participants</h1><div className="brand-lockup screen-brand"><span className="brand-mark" aria-hidden="true"><span className="brand-dot" /><span className="brand-square" /><span className="brand-triangle" /></span><span>Live Rank</span></div></header>
       <section className="bau-stack" style={{ flex: 1, overflow: 'hidden' }}>
         {leaderboardData.map((p: any, idx: number) => (
           <div key={idx} className="rank-row animate-fade-in-up">
             <strong style={{ fontSize: '2.6rem' }}>#{p.rank}</strong>
-            <span style={{ fontSize: '3rem' }}>{p.avatar || '😎'}</span>
+            <AvatarBadge avatar={p.avatar} size={44} />
             <div style={{ minWidth: 0 }}><h2 className="bau-title-md" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</h2><p className="screen-meta" style={{ fontSize: '1.2rem' }}>{p.section}</p></div>
             <strong style={{ fontSize: '2.8rem', textAlign: 'right' }}>{p.score} pts</strong>
           </div>

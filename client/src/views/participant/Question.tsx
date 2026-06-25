@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function Question() {
-  const { socket, currentQuestion, timer, revealData, isGameEnded, playTick } = useSocket();
+  const { socket, currentQuestion, skippedQuestion, timer, revealData, isGameEnded, playTick } = useSocket();
   const navigate = useNavigate();
   const [answer, setAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,17 +29,30 @@ export default function Question() {
     socket.emit('participant:answer', { questionId: currentQuestion.questionId, answer: val ?? answer });
   };
 
+  if (!currentQuestion && skippedQuestion) {
+    return (
+      <main className="bau-mobile-screen bau-center">
+        <section className="bau-card yellow text-center bau-stack animate-fade-in-up">
+          <div className="bau-kicker">Question Skipped</div>
+          <h1 className="bau-title-md">Host skipped this question.</h1>
+          <p className="text-muted">Waiting for the next question.</p>
+        </section>
+      </main>
+    );
+  }
+
   if (!currentQuestion) return null;
   const isTimeUp = timer.remaining <= 0;
   const disabled = isLocked || isSubmitting || isTimeUp || timer.paused;
+  const isShortQuestion = currentQuestion.text.length < 90 && (currentQuestion.options?.length || 0) <= 4;
 
   return (
     <main className="bau-mobile-screen">
       <div className="bau-row between">
-        <div className="bau-kicker">Q{currentQuestion.questionNumber} / {currentQuestion.totalQuestions}</div>
+        <div className="bau-kicker">Question {currentQuestion.questionNumber} of {currentQuestion.totalQuestions}</div>
         <div className={'screen-timer ' + (isTimeUp ? 'danger' : '')} style={{ minWidth: 92, fontSize: '2.5rem', padding: '8px 12px' }}>{timer.remaining}</div>
       </div>
-      <section className="bau-card animate-fade-in-up bau-stack" style={{ flex: 1 }}>
+      <section className="bau-card animate-fade-in-up bau-stack" style={{ flex: 1, justifyContent: isShortQuestion ? 'center' : 'flex-start' }}>
         <h1 className="bau-title-md">{currentQuestion.text}</h1>
         {error && <p className="bau-error" role="alert">{error}</p>}
         {isLocked ? (
@@ -49,7 +62,7 @@ export default function Question() {
             <p className="text-muted">Waiting for the reveal.</p>
           </div>
         ) : (
-          <div className="bau-stack" style={{ marginTop: 'auto' }}>
+          <div className="bau-stack" style={{ marginTop: isShortQuestion ? 'var(--space-md)' : 'auto' }}>
             {currentQuestion.type === 'identification' ? (
               <form className="bau-form" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
                 <input className="bau-input" type="text" placeholder="Type your answer" value={answer} onChange={(e) => setAnswer(e.target.value)} disabled={disabled} />
@@ -57,7 +70,7 @@ export default function Question() {
               </form>
             ) : (
               currentQuestion.options?.map((opt: any, i: number) => (
-                <button key={i} className="bau-button answer-button" type="button" onClick={() => handleSubmit(opt.label || opt.text)} disabled={disabled}>
+                <button key={i} className={'bau-button answer-button option-color-' + (opt.label || String.fromCharCode(65 + i)).toLowerCase()} type="button" onClick={() => handleSubmit(opt.label || opt.text)} disabled={disabled}>
                   <span className="answer-label">{opt.label}</span>
                   <span>{opt.text}</span>
                 </button>

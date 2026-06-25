@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -6,16 +6,14 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from '@dnd-kit/utilities';
 import { apiPath } from '../../config/api';
 
-const MCQ_OPTIONS = [
-  { label: 'A', text: 'Option 1' },
-  { label: 'B', text: 'Option 2' },
-  { label: 'C', text: 'Option 3' },
-  { label: 'D', text: 'Option 4' }
-];
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const MIN_MCQ_OPTIONS = 2;
+const MAX_MCQ_OPTIONS = 6;
 
+const createMcqOptions = (count = 4) => OPTION_LABELS.slice(0, count).map(label => ({ label, text: '' }));
 const TRUE_FALSE_OPTIONS = [
-  { label: 'True', text: 'True' },
-  { label: 'False', text: 'False' }
+  { label: 'A', text: 'True' },
+  { label: 'B', text: 'False' }
 ];
 
 interface SortableQuestionItemProps {
@@ -26,10 +24,8 @@ interface SortableQuestionItemProps {
   onDelete: () => void;
 }
 
-// --- Sortable Item Component ---
 function SortableQuestionItem({ id, question, isActive, onClick, onDelete }: SortableQuestionItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -46,34 +42,32 @@ function SortableQuestionItem({ id, question, isActive, onClick, onDelete }: Sor
 
   return (
     <div ref={setNodeRef} style={style} onClick={onClick}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }} {...attributes} {...listeners}>
-        <span style={{ cursor: 'grab', color: 'var(--text-secondary)' }}>☰</span>
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>
-          {question.text || 'New Question'}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }} {...attributes} {...listeners}>
+        <span style={{ cursor: 'grab', color: 'var(--text-secondary)', fontWeight: 900 }}>::</span>
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }}>
+          {question.text || 'Untitled Question'}
         </span>
       </div>
-      <button 
-        onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-        className="bau-button danger" style={{ minHeight: 36, padding: '4px 10px' }}
-      >
-        ×
+      <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="bau-button danger" style={{ minHeight: 36, padding: '4px 10px' }} type="button">
+        X
       </button>
     </div>
   );
 }
 
-// --- Main Editor Component ---
 export default function Editor() {
   const { isHostAuthenticated } = useSocket();
   const navigate = useNavigate();
-
   const [questionSets, setQuestionSets] = useState<any[]>([]);
   const [selectedSetId, setSelectedSetId] = useState('');
-  
   const [questions, setQuestions] = useState<any[]>([]);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
+  const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
+  const [jsonImportText, setJsonImportText] = useState('');
+  const [modalMode, setModalMode] = useState<'create' | 'rename' | 'delete' | null>(null);
+  const [modalText, setModalText] = useState('');
+  const [toast, setToast] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
 
-  // Load Question Sets
   useEffect(() => {
     if (!isHostAuthenticated) {
       navigate('/host/login');
@@ -82,82 +76,189 @@ export default function Editor() {
     fetchSets();
   }, [isHostAuthenticated, navigate]);
 
-  const fetchSets = () => {
-    fetch(apiPath('/api/question-sets'))
-      .then(res => res.json())
-      .then(data => setQuestionSets(Array.isArray(data) ? data : []))
-      .catch(err => console.error(err));
+  const fetchSets = async () => {
+    try {
+      const res = await fetch(apiPath('/api/question-sets'));
+      const data = await res.json();
+      setQuestionSets(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  // Load Questions when a Set is selected
   useEffect(() => {
-    if (selectedSetId === 'new') {
+    if (!selectedSetId) {
       setQuestions([]);
       setActiveQuestionId(null);
-    } else if (selectedSetId) {
-      fetch(apiPath(`/api/questions/${selectedSetId}`))
-        .then(res => res.json())
-        .then(data => {
-          // Add temporary random IDs for dnd-kit if they don't have one
-          const qList = data.map((q: any) => ({
-            ...q,
-            options: q.type === 'truefalse' ? TRUE_FALSE_OPTIONS : q.options,
-            correct_answer: q.type === 'truefalse' && !['True', 'False'].includes(q.correct_answer)
-              ? 'True'
-              : q.correct_answer,
-            _dndId: q.id || Math.random().toString(36).substring(2, 11)
-          }));
-          setQuestions(qList);
-          setActiveQuestionId(qList.length > 0 ? qList[0]._dndId : null);
-        });
-    } else {
-      setQuestions([]);
-      setActiveQuestionId(null);
+      return;
     }
+
+    fetch(apiPath(`/api/questions/${selectedSetId}`))
+      .then(res => res.json())
+      .then(data => {
+        const qList = data.map((q: any) => normalizeQuestion(q));
+        setQuestions(qList);
+        setActiveQuestionId(qList.length > 0 ? qList[0]._dndId : null);
+      })
+      .catch(console.error);
   }, [selectedSetId]);
 
+  const normalizeQuestion = (q: any) => {
+    const type = q.type || 'mcq';
+    let options = q.options || null;
+    let correct_answer = q.correct_answer || '';
+
+    if (type === 'truefalse') {
+      options = TRUE_FALSE_OPTIONS;
+      if (correct_answer === 'True') correct_answer = 'A';
+      if (correct_answer === 'False') correct_answer = 'B';
+      if (!['A', 'B'].includes(correct_answer)) correct_answer = 'A';
+    }
+
+    if (type === 'mcq') {
+      const sourceOptions = Array.isArray(options) ? options : createMcqOptions();
+      options = sourceOptions
+        .slice(0, MAX_MCQ_OPTIONS)
+        .map((opt: any, index: number) => ({ label: OPTION_LABELS[index], text: opt?.text || '' }));
+      while (options.length < MIN_MCQ_OPTIONS) options.push({ label: OPTION_LABELS[options.length], text: '' });
+      if (!options.some((opt: any) => opt.label === correct_answer)) correct_answer = options[0].label;
+    }
+
+    return {
+      ...q,
+      type,
+      options,
+      correct_answer,
+      timer_seconds: q.timer_seconds || 30,
+      _dndId: q._dndId || q.id || Math.random().toString(36).substring(2, 11)
+    };
+  };
+
+  const serializeQuestion = (q: any) => {
+    if (q.type === 'truefalse') {
+      return {
+        ...q,
+        options: TRUE_FALSE_OPTIONS,
+        correct_answer: q.correct_answer === 'B' ? 'B' : 'A'
+      };
+    }
+    if (q.type === 'mcq') {
+      return {
+        ...q,
+        options: (q.options || []).map((opt: any, index: number) => ({ label: OPTION_LABELS[index], text: opt.text || '' })),
+        correct_answer: q.correct_answer || 'A'
+      };
+    }
+    return { ...q, options: null };
+  };
+
+  const showToast = (message: string, tone: 'success' | 'error' = 'success') => {
+    setToast({ message, tone });
+    window.setTimeout(() => setToast(null), 3200);
+  };
+
+  const openCreateModal = () => {
+    setModalText('');
+    setModalMode('create');
+  };
+
+  const openRenameModal = () => {
+    const selectedSet = questionSets.find(set => String(set.id) === String(selectedSetId));
+    if (!selectedSet) return;
+    setModalText(selectedSet.name || selectedSet.title || '');
+    setModalMode('rename');
+  };
+
+  const openDeleteModal = () => {
+    setModalText('');
+    setModalMode('delete');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setModalText('');
+  };
+
   const handleCreateSet = async () => {
-    const name = prompt('Enter name for the new Question Set:');
-    if (!name) return;
+    const name = modalText.trim();
+    if (!name) return showToast('Question set name is required.', 'error');
 
     const res = await fetch(apiPath('/api/question-sets'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, scoring_config: { base: 1000, speed_bonus_max: 500 } })
+      body: JSON.stringify({ name, scoring_config: { base_points: 1000, speed_bonus_max: 500 } })
     });
+    if (!res.ok) return showToast('Failed to create question set.', 'error');
     const newSet = await res.json();
     await fetchSets();
     setSelectedSetId(newSet.id);
+    closeModal();
+    showToast('Question set created.');
+  };
+
+  const handleRenameSet = async () => {
+    const name = modalText.trim();
+    if (!selectedSetId || !name) return showToast('Question set name is required.', 'error');
+
+    const res = await fetch(apiPath(`/api/question-sets/${selectedSetId}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    if (!res.ok) return showToast('Failed to rename question set.', 'error');
+    await fetchSets();
+    closeModal();
+    showToast('Question set renamed.');
+  };
+
+  const handleDeleteSet = async () => {
+    if (!selectedSetId) return;
+    const res = await fetch(apiPath(`/api/question-sets/${selectedSetId}`), { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error || 'Failed to delete question set.', 'error');
+      return;
+    }
+
+    setSelectedSetId('');
+    setQuestions([]);
+    setActiveQuestionId(null);
+    closeModal();
+    await fetchSets();
+    showToast('Question set deleted.');
   };
 
   const handleSaveQuestions = async () => {
-    if (!selectedSetId || selectedSetId === 'new') return;
+    if (!selectedSetId) return;
+    const prepared = questions.map(q => serializeQuestion(q));
+    const invalid = prepared.find(q => q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < MIN_MCQ_OPTIONS || q.options.some((opt: any) => !opt.text.trim())));
+    if (invalid) {
+      showToast('Every multiple-choice option must have text before saving.', 'error');
+      return;
+    }
+
     try {
       const res = await fetch(apiPath(`/api/questions/${selectedSetId}`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questions })
+        body: JSON.stringify({ questions: prepared })
       });
-      if (res.ok) {
-        alert('Questions saved successfully!');
-      } else {
-        alert('Failed to save questions.');
-      }
+      showToast(res.ok ? 'Questions saved successfully.' : 'Failed to save questions.', res.ok ? 'success' : 'error');
     } catch (e: any) {
-      alert('Error saving questions: ' + e.message);
+      showToast('Error saving questions: ' + e.message, 'error');
     }
   };
 
   const handleAddQuestion = () => {
     const newId = Math.random().toString(36).substring(2, 11);
-    const newQ = {
+    const newQ = normalizeQuestion({
       _dndId: newId,
-      text: 'New Question',
+      text: '',
       type: 'mcq',
       timer_seconds: 30,
       correct_answer: 'A',
-      options: MCQ_OPTIONS
-    };
+      options: createMcqOptions(4)
+    });
     setQuestions([...questions, newQ]);
     setActiveQuestionId(newId);
   };
@@ -165,95 +266,82 @@ export default function Editor() {
   const handleDeleteQuestion = (idToDelete: string) => {
     const updated = questions.filter(q => q._dndId !== idToDelete);
     setQuestions(updated);
-    if (activeQuestionId === idToDelete) {
-      setActiveQuestionId(updated.length > 0 ? updated[0]._dndId : null);
-    }
+    if (activeQuestionId === idToDelete) setActiveQuestionId(updated.length > 0 ? updated[0]._dndId : null);
   };
 
   const updateActiveQuestion = (updates: any) => {
     setQuestions(questions.map(q => q._dndId === activeQuestionId ? { ...q, ...updates } : q));
   };
 
-  const updateOption = (index: number, field: string, value: string) => {
+  const updateOptionText = (index: number, value: string) => {
     const activeQ = questions.find(q => q._dndId === activeQuestionId);
     if (!activeQ || !activeQ.options) return;
     const newOptions = [...activeQ.options];
-    newOptions[index] = { ...newOptions[index], [field]: value };
+    newOptions[index] = { ...newOptions[index], text: value };
     updateActiveQuestion({ options: newOptions });
+  };
+
+  const handleAddOption = () => {
+    const activeQ = questions.find(q => q._dndId === activeQuestionId);
+    if (!activeQ || activeQ.type !== 'mcq' || activeQ.options.length >= MAX_MCQ_OPTIONS) return;
+    updateActiveQuestion({ options: [...activeQ.options, { label: OPTION_LABELS[activeQ.options.length], text: '' }] });
+  };
+
+  const handleDeleteOption = (index: number) => {
+    const activeQ = questions.find(q => q._dndId === activeQuestionId);
+    if (!activeQ || activeQ.type !== 'mcq' || activeQ.options.length <= MIN_MCQ_OPTIONS) return;
+    const options = activeQ.options.filter((_: any, i: number) => i !== index).map((opt: any, i: number) => ({ ...opt, label: OPTION_LABELS[i] }));
+    const correct_answer = options.some((opt: any) => opt.label === activeQ.correct_answer) ? activeQ.correct_answer : options[0].label;
+    updateActiveQuestion({ options, correct_answer });
   };
 
   const handleTypeChange = (type: string) => {
     if (type === 'truefalse') {
-      updateActiveQuestion({
-        type,
-        correct_answer: 'True',
-        options: TRUE_FALSE_OPTIONS
-      });
+      updateActiveQuestion({ type, correct_answer: 'A', options: TRUE_FALSE_OPTIONS });
       return;
     }
-
     if (type === 'mcq') {
-      updateActiveQuestion({
-        type,
-        correct_answer: 'A',
-        options: MCQ_OPTIONS
-      });
+      updateActiveQuestion({ type, correct_answer: 'A', options: createMcqOptions(4) });
       return;
     }
-
-    updateActiveQuestion({
-      type,
-      correct_answer: '',
-      options: null
-    });
+    updateActiveQuestion({ type, correct_answer: '', options: null });
   };
 
-  // Drag and drop setup
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const handleExportJSON = () => {
-    if (questions.length === 0) return alert('No questions to export');
-    // Remove temporary _dndId for a clean export
-    const cleanQuestions = questions.map(({ _dndId, id, ...rest }) => rest);
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanQuestions, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `question_set_${selectedSetId}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+    if (questions.length === 0) return showToast('No questions to export.', 'error');
+    const cleanQuestions = questions.map(({ _dndId, id, ...rest }) => serializeQuestion(rest));
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(cleanQuestions, null, 2));
+    downloadData(dataStr, `question_set_${selectedSetId}.json`);
   };
 
   const handleExportCSV = () => {
-    if (questions.length === 0) return alert('No questions to export');
-    const headers = ['text', 'type', 'timer_seconds', 'correct_answer', 'option_a', 'option_b', 'option_c', 'option_d'];
+    if (questions.length === 0) return showToast('No questions to export.', 'error');
+    const headers = ['text', 'type', 'timer_seconds', 'correct_answer', 'option_a', 'option_b', 'option_c', 'option_d', 'option_e', 'option_f'];
     const rows = questions.map(q => {
-      const optA = q.options?.[0]?.text || '';
-      const optB = q.options?.[1]?.text || '';
-      const optC = q.options?.[2]?.text || '';
-      const optD = q.options?.[3]?.text || '';
-      
+      const serialized = serializeQuestion(q);
+      const options = serialized.options || [];
       const escape = (val: any) => `"${String(val || '').replace(/"/g, '""')}"`;
-      
       return [
-        escape(q.text),
-        escape(q.type),
-        q.timer_seconds || 30,
-        escape(q.correct_answer),
-        escape(optA),
-        escape(optB),
-        escape(optC),
-        escape(optD)
+        escape(serialized.text),
+        escape(serialized.type),
+        serialized.timer_seconds || 30,
+        escape(serialized.correct_answer),
+        ...OPTION_LABELS.map((_, index) => escape(options[index]?.text || ''))
       ].join(',');
     });
-    
-    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(','), ...rows].join('\n'));
+    const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent([headers.join(','), ...rows].join('\n'));
+    downloadData(csvContent, `question_set_${selectedSetId}.csv`);
+  };
+
+  const downloadData = (href: string, filename: string) => {
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", csvContent);
-    downloadAnchor.setAttribute("download", `question_set_${selectedSetId}.csv`);
+    downloadAnchor.setAttribute('href', href);
+    downloadAnchor.setAttribute('download', filename);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -268,7 +356,7 @@ export default function Editor() {
       if (char === '"') {
         if (inQuotes && line[i + 1] === '"') {
           current += '"';
-          i++; // skip next quote
+          i++;
         } else {
           inQuotes = !inQuotes;
         }
@@ -283,123 +371,85 @@ export default function Editor() {
     return result;
   };
 
-  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const importQuestions = (importedQuestions: any[]) => {
+    const validated = importedQuestions.map((q, index) => validateImportedQuestion(q, index + 1));
+    setQuestions([...questions, ...validated]);
+    if (validated.length > 0) setActiveQuestionId(validated[0]._dndId);
+    showToast(`Successfully imported ${validated.length} questions. Click Save All Changes to persist.`);
+  };
+
+  const handleCsvFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = event.target?.result as string;
       try {
-        let importedQuestions: any[] = [];
-        
-        if (file.name.endsWith('.json')) {
-          const parsed = JSON.parse(content);
-          if (!Array.isArray(parsed)) throw new Error('Root must be a JSON array of questions');
-          importedQuestions = parsed;
-        } else if (file.name.endsWith('.csv')) {
-          const lines = content.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
-          if (lines.length <= 1) throw new Error('CSV is empty or missing headers');
-          
-          const headers = parseCSVLine(lines[0]);
-          const textIdx = headers.indexOf('text');
-          const typeIdx = headers.indexOf('type');
-          const timerIdx = headers.indexOf('timer_seconds');
-          const correctIdx = headers.indexOf('correct_answer');
-          const optAIdx = headers.indexOf('option_a');
-          const optBIdx = headers.indexOf('option_b');
-          const optCIdx = headers.indexOf('option_c');
-          const optDIdx = headers.indexOf('option_d');
-          
-          if (textIdx === -1 || typeIdx === -1 || correctIdx === -1) {
-            throw new Error('CSV must contain at least "text", "type", and "correct_answer" headers');
-          }
-          
-          for (let i = 1; i < lines.length; i++) {
-            const cols = parseCSVLine(lines[i]);
-            if (cols.length < 3 || !cols[textIdx]) continue;
-            
-            const type = cols[typeIdx] || 'mcq';
-            const timer_seconds = parseInt(cols[timerIdx] || '30');
-            const text = cols[textIdx] || '';
-            const correct_answer = cols[correctIdx] || '';
-            
-            let options = null;
-            if (type === 'mcq') {
-               options = [
-                 { label: 'A', text: cols[optAIdx] || 'Option A' },
-                 { label: 'B', text: cols[optBIdx] || 'Option B' },
-                 { label: 'C', text: cols[optCIdx] || 'Option C' },
-                 { label: 'D', text: cols[optDIdx] || 'Option D' }
-               ];
-            } else if (type === 'truefalse') {
-               options = [
-                 { label: 'True', text: 'True' },
-                 { label: 'False', text: 'False' }
-               ];
-            }
-            
-            importedQuestions.push({
-              text,
-              type,
-              timer_seconds,
-              correct_answer,
-              options
-            });
-          }
-        } else {
-          throw new Error('Unsupported file format. Please upload a .json or .csv file');
-        }
-        
-        const validated: any[] = [];
-        for (let i = 0; i < importedQuestions.length; i++) {
-          const q = importedQuestions[i];
-          const rowNum = i + 1;
-          
-          if (!q.text || typeof q.text !== 'string' || !q.text.trim()) {
-            throw new Error(`Question ${rowNum}: Question text is required`);
-          }
-          if (!['mcq', 'truefalse', 'identification'].includes(q.type)) {
-            throw new Error(`Question ${rowNum}: Invalid type "${q.type}". Must be mcq, truefalse, or identification`);
-          }
-          if (isNaN(q.timer_seconds) || q.timer_seconds <= 0) {
-            throw new Error(`Question ${rowNum}: timer_seconds must be a positive integer`);
-          }
-          if (!q.correct_answer || typeof q.correct_answer !== 'string' || !q.correct_answer.trim()) {
-            throw new Error(`Question ${rowNum}: correct_answer is required`);
-          }
-          
-          if (q.type === 'mcq') {
-            if (!Array.isArray(q.options) || q.options.length !== 4) {
-              throw new Error(`Question ${rowNum} (mcq): options must be an array of exactly 4 elements`);
-            }
-            const validLabels = q.options.map((o: any) => o.label);
-            if (!validLabels.includes(q.correct_answer)) {
-              throw new Error(`Question ${rowNum} (mcq): correct_answer must match one of the option labels (A, B, C, or D)`);
-            }
-          } else if (q.type === 'truefalse') {
-            if (!['True', 'False'].includes(q.correct_answer)) {
-              throw new Error(`Question ${rowNum} (truefalse): correct_answer must be either "True" or "False"`);
-            }
-          }
-          
-          validated.push({
-            ...q,
-            _dndId: Math.random().toString(36).substring(2, 11)
-          });
-        }
-        
-        setQuestions([...questions, ...validated]);
-        if (validated.length > 0) {
-          setActiveQuestionId(validated[0]._dndId);
-        }
-        alert(`Successfully imported ${validated.length} questions! Click "Save All Changes" to persist.`);
+        if (!file.name.endsWith('.csv')) throw new Error('Unsupported file format. Please upload a .csv file');
+        importQuestions(parseCsvQuestions(content));
       } catch (err: any) {
-        alert(`Import Failed: ${err.message}`);
+        showToast(`CSV Import Failed: ${err.message}`, 'error');
       }
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleJsonPasteImport = () => {
+    try {
+      const parsed = JSON.parse(jsonImportText);
+      if (!Array.isArray(parsed)) throw new Error('Root must be a JSON array of questions');
+      importQuestions(parsed);
+      setJsonImportText('');
+      setIsJsonImportOpen(false);
+    } catch (err: any) {
+      showToast(`JSON Import Failed: ${err.message}`, 'error');
+    }
+  };
+  const parseCsvQuestions = (content: string) => {
+    const lines = content.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    if (lines.length <= 1) throw new Error('CSV is empty or missing headers');
+    const headers = parseCSVLine(lines[0]);
+    const required = ['text', 'type', 'correct_answer'];
+    for (const header of required) {
+      if (!headers.includes(header)) throw new Error('CSV must contain text, type, and correct_answer headers');
+    }
+
+    return lines.slice(1).map(line => {
+      const cols = parseCSVLine(line);
+      const value = (header: string) => cols[headers.indexOf(header)] || '';
+      const type = value('type') || 'mcq';
+      const optionValues = OPTION_LABELS.map(label => value(`option_${label.toLowerCase()}`)).filter(Boolean);
+      return {
+        text: value('text'),
+        type,
+        timer_seconds: parseInt(value('timer_seconds') || '30'),
+        correct_answer: value('correct_answer'),
+        options: type === 'mcq'
+          ? optionValues.map((text, index) => ({ label: OPTION_LABELS[index], text }))
+          : type === 'truefalse'
+            ? TRUE_FALSE_OPTIONS
+            : null
+      };
+    }).filter(q => q.text);
+  };
+
+  const validateImportedQuestion = (q: any, rowNum: number) => {
+    const normalized = normalizeQuestion(q);
+    if (!normalized.text || typeof normalized.text !== 'string' || !normalized.text.trim()) throw new Error(`Question ${rowNum}: Question text is required`);
+    if (!['mcq', 'truefalse', 'identification'].includes(normalized.type)) throw new Error(`Question ${rowNum}: Invalid type "${normalized.type}"`);
+    if (isNaN(normalized.timer_seconds) || normalized.timer_seconds <= 0) throw new Error(`Question ${rowNum}: timer_seconds must be a positive integer`);
+    if (!normalized.correct_answer || typeof normalized.correct_answer !== 'string' || !normalized.correct_answer.trim()) throw new Error(`Question ${rowNum}: correct_answer is required`);
+    if (normalized.type === 'mcq') {
+      if (!Array.isArray(normalized.options) || normalized.options.length < MIN_MCQ_OPTIONS || normalized.options.length > MAX_MCQ_OPTIONS) {
+        throw new Error(`Question ${rowNum} (mcq): options must contain 2 to 6 elements`);
+      }
+      if (normalized.options.some((opt: any) => !opt.text.trim())) throw new Error(`Question ${rowNum} (mcq): option text cannot be blank`);
+      if (!normalized.options.some((opt: any) => opt.label === normalized.correct_answer)) throw new Error(`Question ${rowNum} (mcq): correct_answer must match an option label`);
+    }
+    if (normalized.type === 'truefalse' && !['A', 'B'].includes(normalized.correct_answer)) throw new Error(`Question ${rowNum} (truefalse): correct_answer must be A or B`);
+    return normalized;
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -416,9 +466,8 @@ export default function Editor() {
   if (!isHostAuthenticated) return null;
 
   const activeQ = questions.find(q => q._dndId === activeQuestionId);
-  const visibleOptions = activeQ?.type === 'truefalse'
-    ? TRUE_FALSE_OPTIONS
-    : (activeQ?.options || []);
+  const visibleOptions = activeQ?.type === 'truefalse' ? TRUE_FALSE_OPTIONS : (activeQ?.options || []);
+  const selectedSet = questionSets.find(set => String(set.id) === String(selectedSetId));
 
   return (
     <div className="host-shell">
@@ -428,164 +477,131 @@ export default function Editor() {
       </nav>
 
       <main className="host-main bau-stack">
-        
-        {/* Top Controls */}
-        <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
-          <select 
-            value={selectedSetId} 
-            onChange={e => setSelectedSetId(e.target.value)}
-            className="bau-select"
-          >
-            <option value="">-- Select Question Set to Edit --</option>
+        <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center', flexWrap: 'wrap' }}>
+          <select value={selectedSetId} onChange={e => setSelectedSetId(e.target.value)} className="bau-select" style={{ flex: '1 1 320px' }}>
+            <option value="">Select Question Set to Edit</option>
             {questionSets.map(s => <option key={s.id} value={s.id}>{s.name || s.title}</option>)}
           </select>
-          <button onClick={handleCreateSet} className="bau-button secondary">+ New Set</button>
-          
-          <div style={{ flex: 1 }}></div>
-          {selectedSetId && (
-            <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-              <button onClick={handleExportJSON} className="bau-button secondary">Export JSON</button>
-              <button onClick={handleExportCSV} className="bau-button secondary">Export CSV</button>
-              <label className="bau-button secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', margin: 0 }}>
-                Import File
-                <input 
-                  type="file" 
-                  accept=".json,.csv" 
-                  onChange={handleFileImport} 
-                  style={{ display: 'none' }} 
-                />
-              </label>
-              <button onClick={handleSaveQuestions} className="bau-button primary">Save All Changes</button>
-            </div>
-          )}
+          <button onClick={openCreateModal} className="bau-button secondary" type="button">+ New Set</button>
+          {selectedSetId && <button onClick={openRenameModal} className="bau-button secondary" type="button">Rename Set</button>}
+          {selectedSetId && <button onClick={openDeleteModal} className="bau-button danger" type="button">Delete Set</button>}
+          {selectedSet && <span className="bau-kicker">Editing: {selectedSet.name || selectedSet.title}</span>}
         </div>
 
-        {/* Editor Grid */}
         {selectedSetId && (
-          <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 'var(--space-xl)', flex: 1, alignItems: 'start' }}>
-            
-            {/* List Panel */}
-            <div className="bau-card" style={{ height: '600px', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
-                <h3>Questions ({questions.length})</h3>
-                <button onClick={handleAddQuestion} className="bau-button secondary">+ Add</button>
-              </div>
-
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={questions.map(q => q._dndId)} strategy={verticalListSortingStrategy}>
-                  {questions.map((q) => (
-                    <SortableQuestionItem 
-                      key={q._dndId} 
-                      id={q._dndId} 
-                      question={q} 
-                      isActive={q._dndId === activeQuestionId}
-                      onClick={() => setActiveQuestionId(q._dndId)}
-                      onDelete={() => handleDeleteQuestion(q._dndId)}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
+          <>
+            <div className="bau-row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button onClick={handleExportJSON} className="bau-button secondary" type="button">Export JSON</button>
+              <button onClick={handleExportCSV} className="bau-button secondary" type="button">Export CSV</button>
+              <label className="bau-button secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', margin: 0 }}>
+                Import CSV File
+                <input type="file" accept=".csv" onChange={handleCsvFileImport} style={{ display: 'none' }} />
+              </label>
+              <button onClick={() => setIsJsonImportOpen(true)} className="bau-button secondary" type="button">Paste JSON</button>
+              <button onClick={handleSaveQuestions} className="bau-button primary" type="button">Save All Changes</button>
             </div>
 
-            {/* Form Panel */}
-            {activeQ ? (
-              <div className="bau-card">
-                <h3>Edit Question</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
-                  
+            {isJsonImportOpen && (
+              <section className="bau-card compact bau-stack">
+                <div className="bau-row between">
                   <div>
-                    <label className="text-muted">Question Text</label>
-                    <textarea 
-                      value={activeQ.text} 
-                      onChange={e => updateActiveQuestion({ text: e.target.value })}
-                      className="bau-textarea"
-                    />
+                    <h2 className="bau-title-md">Paste JSON Questions</h2>
+                    <p className="bau-meta">Paste a JSON array of question objects, then import it into this set.</p>
+                  </div>
+                  <button className="bau-button ghost" type="button" onClick={() => setIsJsonImportOpen(false)}>Close</button>
+                </div>
+                <textarea
+                  className="bau-textarea"
+                  style={{ minHeight: 220, fontFamily: 'monospace' }}
+                  value={jsonImportText}
+                  onChange={(e) => setJsonImportText(e.target.value)}
+                  placeholder='[{"text":"What does HTML stand for?","type":"mcq","timer_seconds":30,"correct_answer":"A","options":[{"label":"A","text":"HyperText Markup Language"}]}]'
+                />
+                <div className="bau-row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  <button className="bau-button ghost" type="button" onClick={() => { setJsonImportText(''); setIsJsonImportOpen(false); }}>Cancel</button>
+                  <button className="bau-button primary" type="button" onClick={handleJsonPasteImport} disabled={!jsonImportText.trim()}>Import JSON</button>
+                </div>
+              </section>
+            )}
+
+            <div className="editor-grid" style={{ flex: 1 }}>
+              <div className="bau-card question-list">
+                <div className="bau-row between" style={{ marginBottom: 'var(--space-md)' }}>
+                  <h3>Questions ({questions.length})</h3>
+                  <button onClick={handleAddQuestion} className="bau-button secondary" type="button">+ Add</button>
+                </div>
+
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={questions.map(q => q._dndId)} strategy={verticalListSortingStrategy}>
+                    {questions.map((q) => (
+                      <SortableQuestionItem key={q._dndId} id={q._dndId} question={q} isActive={q._dndId === activeQuestionId} onClick={() => setActiveQuestionId(q._dndId)} onDelete={() => handleDeleteQuestion(q._dndId)} />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </div>
+
+              {activeQ ? (
+                <div className="bau-card bau-stack">
+                  <h3>Edit Question</h3>
+                  <label><span className="bau-label">Question Text</span><textarea value={activeQ.text} onChange={e => updateActiveQuestion({ text: e.target.value })} className="bau-textarea" placeholder="Type the question shown to players" /></label>
+                  <div className="bau-grid two">
+                    <label><span className="bau-label">Type</span><select value={activeQ.type} onChange={e => handleTypeChange(e.target.value)} className="bau-input"><option value="mcq">Multiple Choice</option><option value="truefalse">True / False</option><option value="identification">Identification</option></select></label>
+                    <label><span className="bau-label">Timer (Seconds)</span><input type="number" value={activeQ.timer_seconds} onChange={e => updateActiveQuestion({ timer_seconds: parseInt(e.target.value) })} className="bau-input" min={1} /></label>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                    <div style={{ flex: 1 }}>
-                      <label className="text-muted">Type</label>
-                      <select 
-                        value={activeQ.type} 
-                        onChange={e => handleTypeChange(e.target.value)}
-                        className="bau-input"
-                      >
-                        <option value="mcq">Multiple Choice</option>
-                        <option value="truefalse">True / False</option>
-                        <option value="identification">Identification</option>
-                      </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label className="text-muted">Timer (Seconds)</label>
-                      <input 
-                        type="number" 
-                        value={activeQ.timer_seconds} 
-                        onChange={e => updateActiveQuestion({ timer_seconds: parseInt(e.target.value) })}
-                        className="bau-input"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Options editor based on type */}
                   {(activeQ.type === 'mcq' || activeQ.type === 'truefalse') && (
-                    <div style={{ marginTop: 'var(--space-md)' }}>
-                      <label className="text-muted">Options</label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                        {visibleOptions.map((opt: any, i: number) => (
-                          <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <input 
-                              type="radio" 
-                              name="correct_answer" 
-                              checked={activeQ.correct_answer === opt.label}
-                              onChange={() => updateActiveQuestion({ correct_answer: opt.label })}
-                            />
-                            <input 
-                              type="text" 
-                              value={opt.label} 
-                              onChange={e => updateOption(i, 'label', e.target.value)} 
-                              className="bau-input" style={{ width: 72 }} 
-                              placeholder="Label" 
-                              disabled={activeQ.type === 'truefalse'}
-                            />
-                            <input 
-                              type="text" 
-                              value={opt.text} 
-                              onChange={e => updateOption(i, 'text', e.target.value)} 
-                              className="bau-input" style={{ flex: 1 }} 
-                              placeholder="Option Text" 
-                              disabled={activeQ.type === 'truefalse'}
-                            />
-                          </div>
-                        ))}
-                      </div>
+                    <div className="bau-stack">
+                      <div className="bau-row between"><span className="bau-label">Options</span>{activeQ.type === 'mcq' && <button className="bau-button secondary" type="button" onClick={handleAddOption} disabled={visibleOptions.length >= MAX_MCQ_OPTIONS}>Add Option</button>}</div>
+                      {visibleOptions.map((opt: any, i: number) => (
+                        <div key={opt.label} className="option-editor-row">
+                          <input type="radio" name="correct_answer" checked={activeQ.correct_answer === opt.label} onChange={() => updateActiveQuestion({ correct_answer: opt.label })} aria-label={`Mark option ${opt.label} correct`} />
+                          <div className="answer-label">{opt.label}</div>
+                          <input type="text" value={opt.text} onChange={e => updateOptionText(i, e.target.value)} className="bau-input" placeholder={`Option ${opt.label} text`} disabled={activeQ.type === 'truefalse'} />
+                          {activeQ.type === 'mcq' && <button className="bau-button danger" type="button" onClick={() => handleDeleteOption(i)} disabled={visibleOptions.length <= MIN_MCQ_OPTIONS}>Delete</button>}
+                        </div>
+                      ))}
                     </div>
                   )}
 
                   {activeQ.type === 'identification' && (
-                    <div style={{ marginTop: 'var(--space-md)' }}>
-                      <label className="text-muted">Exact Correct Answer</label>
-                      <input 
-                        type="text" 
-                        value={activeQ.correct_answer} 
-                        onChange={e => updateActiveQuestion({ correct_answer: e.target.value })}
-                        className="bau-input"
-                      />
-                    </div>
+                    <label><span className="bau-label">Exact Correct Answer</span><input type="text" value={activeQ.correct_answer} onChange={e => updateActiveQuestion({ correct_answer: e.target.value })} className="bau-input" placeholder="Type the exact accepted answer" /></label>
                   )}
-
                 </div>
-              </div>
-            ) : (
-              <div className="bau-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '600px' }}>
-                <p className="text-muted">Select a question to edit.</p>
-              </div>
-            )}
-            
+              ) : (
+                <div className="bau-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '600px' }}><p className="text-muted">Select a question to edit.</p></div>
+              )}
+            </div>
+          </>
+        )}
+
+        {modalMode && (
+          <div className="editor-modal-backdrop" role="presentation">
+            <section className="bau-card editor-modal" role="dialog" aria-modal="true" aria-labelledby="editor-modal-title">
+              {modalMode === 'delete' ? (
+                <div className="bau-stack">
+                  <h2 id="editor-modal-title" className="bau-title-md">Delete Question Set</h2>
+                  <p>Delete <strong>{selectedSet?.name || selectedSet?.title}</strong> and all of its questions? This cannot be undone.</p>
+                  <div className="bau-row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <button className="bau-button ghost" type="button" onClick={closeModal}>Cancel</button>
+                    <button className="bau-button danger" type="button" onClick={handleDeleteSet}>Delete Set</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bau-stack">
+                  <h2 id="editor-modal-title" className="bau-title-md">{modalMode === 'create' ? 'New Question Set' : 'Rename Question Set'}</h2>
+                  <label><span className="bau-label">Set Name</span><input className="bau-input" value={modalText} onChange={(e) => setModalText(e.target.value)} autoFocus /></label>
+                  <div className="bau-row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <button className="bau-button ghost" type="button" onClick={closeModal}>Cancel</button>
+                    <button className="bau-button primary" type="button" onClick={modalMode === 'create' ? handleCreateSet : handleRenameSet}>{modalMode === 'create' ? 'Create Set' : 'Save Name'}</button>
+                  </div>
+                </div>
+              )}
+            </section>
           </div>
         )}
+
+        {toast && <div className={'editor-toast ' + toast.tone}>{toast.message}</div>}
       </main>
     </div>
   );
 }
-
-

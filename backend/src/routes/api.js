@@ -25,6 +25,41 @@ router.post('/question-sets', async (req, res) => {
   res.json(data);
 });
 
+router.put('/question-sets/:setId', async (req, res) => {
+  if (!supabase) return res.status(503).json({ error: 'Supabase not configured' });
+  const { name } = req.body;
+  if (!name || !String(name).trim()) return res.status(400).json({ error: 'Question set name is required' });
+
+  const { data, error } = await supabase
+    .from('question_sets')
+    .update({ name: String(name).trim() })
+    .eq('id', req.params.setId)
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+router.delete('/question-sets/:setId', async (req, res) => {
+  if (!supabase) return res.status(503).json({ error: 'Supabase not configured' });
+  const setId = req.params.setId;
+
+  const { error: questionsError } = await supabase
+    .from('questions')
+    .delete()
+    .eq('question_set_id', setId);
+  if (questionsError) return res.status(500).json({ error: questionsError.message });
+
+  const { error: setError } = await supabase
+    .from('question_sets')
+    .delete()
+    .eq('id', setId);
+  if (setError) return res.status(500).json({ error: setError.message });
+
+  res.json({ success: true });
+});
+
 // --- QUESTIONS ---
 
 router.get('/questions/:setId', async (req, res) => {

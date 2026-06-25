@@ -15,6 +15,7 @@ const mockSocketContext = {
   lobbyData: { participants: [], count: 0 },
   timer: { remaining: 0, paused: false },
   currentQuestion: null,
+  skippedQuestion: null,
   revealData: null,
   isGameEnded: false,
   resultCard: null,
@@ -24,10 +25,18 @@ const mockSocketContext = {
   setHostState: vi.fn(),
   hostAnswerCount: { answered: 0, total: 0, percentage: 0 },
   hostPreview: null,
+  hostCurrentQuestion: null,
+  gameCountdown: null,
+  hostError: '',
   isScreenRegistered: false,
   registerScreen: vi.fn(),
   podiumData: null,
-  leaderboardData: null
+  leaderboardData: null,
+  isMuted: false,
+  setIsMuted: vi.fn(),
+  playTick: vi.fn(),
+  playChime: vi.fn(),
+  playBuzz: vi.fn()
 };
 
 const renderJoin = () => {
@@ -48,8 +57,9 @@ describe('Join Component', () => {
   it('renders the join form correctly', () => {
     renderJoin();
     expect(screen.getByText(/Join Game/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Room PIN/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Display Name/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/e.g. 000000/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Display Name/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/IT1B/i)).toBeInTheDocument();
   });
 
   it('validates empty fields on submit', () => {
@@ -64,9 +74,9 @@ describe('Join Component', () => {
   it('submits correctly when fields are filled', () => {
     renderJoin();
     
-    fireEvent.change(screen.getByPlaceholderText(/Room PIN/i), { target: { value: '123456' } });
-    fireEvent.change(screen.getByPlaceholderText(/Display Name/i), { target: { value: 'John Doe' } });
-    fireEvent.change(screen.getByPlaceholderText(/e.g. BSCS-3A/i), { target: { value: 'CS-101' } });
+    fireEvent.change(screen.getByPlaceholderText(/e.g. 000000/i), { target: { value: '123456' } });
+    fireEvent.change(screen.getByLabelText(/Display Name/i), { target: { value: 'John Doe' } });
+    fireEvent.change(screen.getByPlaceholderText(/IT1B/i), { target: { value: 'CS-101' } });
 
     const joinButton = screen.getByRole('button', { name: /^Join$/i });
     fireEvent.click(joinButton);

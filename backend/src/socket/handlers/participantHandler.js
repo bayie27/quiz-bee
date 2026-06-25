@@ -53,7 +53,8 @@ module.exports = (io, socket) => {
     // Broadcast updated participant list to everyone (FR-47, FR-52)
     io.to('game').to('host').to('screen').emit('lobby:update', {
       participants: gameState.getParticipantList(),
-      count: gameState.getParticipantCount()
+        count: gameState.getParticipantCount(),
+        roomPin: gameState.roomConfig.roomPin
     });
 
     console.log(`[JOIN] ${result.participant.name} (${result.participant.section}) joined — total: ${gameState.getParticipantCount()}`);
@@ -108,7 +109,8 @@ module.exports = (io, socket) => {
     // Broadcast updated count
     io.to('game').to('host').to('screen').emit('lobby:update', {
       participants: gameState.getParticipantList(),
-      count: gameState.getParticipantCount()
+        count: gameState.getParticipantCount(),
+        roomPin: gameState.roomConfig.roomPin
     });
 
     console.log(`[REJOIN] ${result.participant.name} (${result.participant.section}) reconnected — score: ${result.participant.score}, streak: ${result.participant.streak}`);
@@ -196,7 +198,8 @@ module.exports = (io, socket) => {
       // Broadcast updated count (they're gone for good)
       io.to('game').to('host').to('screen').emit('lobby:update', {
         participants: gameState.getParticipantList(),
-        count: gameState.getParticipantCount()
+        count: gameState.getParticipantCount(),
+        roomPin: gameState.roomConfig.roomPin
       });
     });
 
@@ -210,7 +213,8 @@ module.exports = (io, socket) => {
       // Broadcast updated count immediately
       io.to('game').to('host').to('screen').emit('lobby:update', {
         participants: gameState.getParticipantList(),
-        count: gameState.getParticipantCount()
+        count: gameState.getParticipantCount(),
+        roomPin: gameState.roomConfig.roomPin
       });
     }
   });

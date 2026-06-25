@@ -31,9 +31,9 @@ export default function Reveal() {
       <section className={'bau-card animate-fade-in-up bau-stack text-center ' + toneClass}>
         <div className="bau-kicker">Result</div>
         <h1 className="bau-title-lg">{message}</h1>
-        <div className="stat-block" style={{ background: '#fff' }}>
-          <div className="stat-value">+{points || 0}</div>
-          <div className="bau-meta">Points</div>
+        <div className="stat-block" style={{ background: '#fff', color: '#121212' }}>
+          <div className="stat-value">+{points ?? 0}</div>
+          <div className="bau-meta">Points This Question</div>
         </div>
         {breakdown && (
           <div className="bau-card compact no-shadow" style={{ textAlign: 'left' }}>
@@ -42,9 +42,16 @@ export default function Reveal() {
             <div className="bau-row between"><span>Multiplier</span><strong>x{breakdown.multiplier}</strong></div>
           </div>
         )}
+        {!breakdown && (
+          <div className="bau-card compact no-shadow" style={{ textAlign: 'left' }}>
+            <div className="bau-row between"><span>Base</span><strong>0</strong></div>
+            <div className="bau-row between"><span>Speed</span><strong>+0</strong></div>
+            <div className="bau-row between"><span>Multiplier</span><strong>x1</strong></div>
+          </div>
+        )}
         <div className="bau-grid two">
-          <div className="stat-block"><div className="bau-meta">Total</div><strong>{totalScore || 0}</strong></div>
-          <div className="stat-block"><div className="bau-meta">Rank</div><strong>#{rank || '-'}</strong></div>
+          <div className="stat-block"><div className="bau-meta">Current Score</div><strong>{totalScore ?? 0}</strong></div>
+          <div className="stat-block"><div className="bau-meta">Current Rank</div><strong>#{rank ?? '-'}</strong></div>
         </div>
         {streak > 1 && <p className="bau-kicker">{streak} answer streak</p>}
       </section>

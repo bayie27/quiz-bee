@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function Idle() {
-  const { currentQuestion, isGameEnded } = useSocket();
+  const { currentQuestion, isGameEnded, gameCountdown } = useSocket();
   const navigate = useNavigate();
   useEffect(() => {
     if (currentQuestion) navigate('/question');
@@ -12,8 +12,17 @@ export default function Idle() {
   return (
     <main className="bau-mobile-screen bau-center">
       <section className="bau-card blue animate-pulse text-center bau-stack">
-        <h1 className="bau-title-lg">Get Ready</h1>
-        <p>Look at the big screen for the next question.</p>
+        {gameCountdown ? (
+          <>
+            <div className="bau-kicker">Question 1 starts in</div>
+            <div className="stat-value">{gameCountdown.remaining}</div>
+          </>
+        ) : (
+          <>
+            <h1 className="bau-title-lg">Get Ready</h1>
+            <p>Look at the big screen for the next question.</p>
+          </>
+        )}
       </section>
     </main>
   );

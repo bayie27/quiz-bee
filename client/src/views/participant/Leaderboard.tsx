@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import AvatarBadge from '../../components/AvatarBadge';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
@@ -25,7 +26,7 @@ export default function Leaderboard() {
           <div key={idx} className="bau-card compact animate-fade-in-up" style={{ background: p.name === participant?.name ? 'var(--color-yellow)' : 'var(--color-surface)' }}>
             <div className="bau-row">
               <strong style={{ width: 32 }}>#{p.rank}</strong>
-              <span style={{ fontSize: '1.6rem' }}>{p.avatar || '😎'}</span>
+              <AvatarBadge avatar={p.avatar} size={44} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}{p.name === participant?.name ? ' (You)' : ''}</div>
               </div>
