@@ -15,7 +15,6 @@ import Auth from './views/host/Auth';
 import Dashboard from './views/host/Dashboard';
 import Editor from './views/host/Editor';
 import Sets from './views/host/Sets';
-import Branding from './views/host/Branding';
 import Game from './views/host/Game';
 
 // Big Screen Views
@@ -49,7 +48,7 @@ function MobileLayout({ children }: MobileLayoutProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', fontWeight: 'bold', fontFamily: 'var(--font-heading)' }}>
           <span style={{ fontSize: '1.25rem' }}>🐝</span>
           <span style={{ background: 'linear-gradient(135deg, var(--color-primary-light), var(--color-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            QuizBee
+            JPCS Quiz Game
           </span>
         </div>
         <button
@@ -109,7 +108,6 @@ function App() {
         <Route path="/host" element={<Dashboard />} />
         <Route path="/host/editor" element={<Editor />} />
         <Route path="/host/sets" element={<Sets />} />
-        <Route path="/host/branding" element={<Branding />} />
         <Route path="/host/game" element={<Game />} />
 
         {/* 10.3 Big Screen Screens (Full Width) */}

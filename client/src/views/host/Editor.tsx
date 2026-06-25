@@ -423,10 +423,9 @@ export default function Editor() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column' }}>
       <nav style={{ background: 'var(--bg-secondary)', padding: 'var(--space-md) var(--space-xl)', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <h2>Quiz Bee Host</h2>
+        <h2>JPCS Quiz Game Host</h2>
         <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
           <Link to="/host" style={navLink}>Dashboard</Link>
-          <Link to="/host/branding" style={navLink}>Branding</Link>
         </div>
       </nav>
 

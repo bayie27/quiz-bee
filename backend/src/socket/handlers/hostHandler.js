@@ -434,8 +434,7 @@ module.exports = (io, socket) => {
         bestStreak: participant.bestStreak,
         name: participant.name,
         section: participant.section,
-        avatar: participant.avatar,
-        accentColor: participant.accentColor
+        avatar: participant.avatar
       });
     }
 

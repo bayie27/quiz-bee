@@ -1,18 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function ScreenLeaderboard() {
   const { leaderboardData, socket, isGameEnded } = useSocket();
   const navigate = useNavigate();
-  const [branding, setBranding] = useState({ primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef' });
-
-  useEffect(() => {
-    fetch('/api/branding')
-      .then(res => res.json())
-      .then(data => { if (data.id) setBranding(data); })
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     if (isGameEnded && !leaderboardData) navigate('/screen/podium');
@@ -43,7 +35,7 @@ export default function ScreenLeaderboard() {
       flexDirection: 'column',
       padding: '40px 80px'
     }}>
-      <h1 style={{ fontSize: '4rem', textAlign: 'center', marginBottom: '40px', color: branding.primary_color_hex }}>
+      <h1 style={{ fontSize: '4rem', textAlign: 'center', marginBottom: '40px', color: '#8b5cf6' }}>
         Top Participants
       </h1>
 
@@ -64,7 +56,7 @@ export default function ScreenLeaderboard() {
             padding: '20px 40px',
             gap: '30px',
             animationDelay: `${idx * 0.1}s`,
-            borderLeft: `8px solid ${idx === 0 ? '#fbbf24' : idx === 1 ? '#94a3b8' : idx === 2 ? '#b45309' : branding.primary_color_hex}`
+            borderLeft: `8px solid ${idx === 0 ? '#fbbf24' : idx === 1 ? '#94a3b8' : idx === 2 ? '#b45309' : '#8b5cf6'}`
           }}>
             <div style={{ fontSize: '3rem', fontWeight: 'bold', width: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
               {p.rank}
@@ -81,7 +73,7 @@ export default function ScreenLeaderboard() {
                 🔥 {p.bestStreak}
               </div>
             )}
-            <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: branding.accent_color_hex, width: '250px', textAlign: 'right' }}>
+            <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: '#d946ef', width: '250px', textAlign: 'right' }}>
               {p.score} pts
             </div>
           </div>

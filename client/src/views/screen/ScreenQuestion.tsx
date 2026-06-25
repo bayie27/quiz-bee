@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
@@ -6,14 +6,6 @@ export default function ScreenQuestion() {
   const { currentQuestion, revealData, isGameEnded, timer, socket } = useSocket();
   const navigate = useNavigate();
 
-  const [branding, setBranding] = useState({ primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef' });
-
-  useEffect(() => {
-    fetch('/api/branding')
-      .then(res => res.json())
-      .then(data => { if (data.id) setBranding(data); })
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     if (revealData) navigate('/screen/reveal');
@@ -45,13 +37,13 @@ export default function ScreenQuestion() {
       
       {/* Top Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-        <div style={{ fontSize: '2rem', color: branding.accent_color_hex, fontWeight: 'bold' }}>
+        <div style={{ fontSize: '2rem', color: '#d946ef', fontWeight: 'bold' }}>
           Question {questionNumber} of {totalQuestions}
         </div>
         <div style={{ 
           fontSize: '4rem', 
           fontWeight: 'bold', 
-          color: timer.remaining <= 5 ? 'var(--color-danger)' : branding.primary_color_hex,
+          color: timer.remaining <= 5 ? 'var(--color-danger)' : '#8b5cf6',
           background: 'rgba(255,255,255,0.1)',
           padding: '10px 40px',
           borderRadius: '20px'

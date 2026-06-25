@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -6,14 +6,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 export default function ScreenReveal() {
   const { currentQuestion, revealData, leaderboardData, isGameEnded, socket } = useSocket();
   const navigate = useNavigate();
-  const [branding, setBranding] = useState({ primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef' });
-
-  useEffect(() => {
-    fetch('/api/branding')
-      .then(res => res.json())
-      .then(data => { if (data.id) setBranding(data); })
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     if (leaderboardData) navigate('/screen/leaderboard');
@@ -63,7 +55,7 @@ export default function ScreenReveal() {
       
       {/* Top Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div style={{ fontSize: '2rem', color: branding.accent_color_hex, fontWeight: 'bold' }}>
+        <div style={{ fontSize: '2rem', color: '#d946ef', fontWeight: 'bold' }}>
           Question {questionNumber} / {totalQuestions}
         </div>
         <div style={{ fontSize: '2rem', color: 'var(--text-muted)' }}>

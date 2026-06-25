@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 const AVATARS = ['😎', '🤠', '👻', '👾', '🦊', '🐼', '🚀', '🧠'];
-const ACCENT_COLORS = ['#6C63FF', '#FF6584', '#10B981', '#F59E0B', '#06B6D4', '#FF5722', '#EC4899', '#6366F1'];
 
 export default function Join() {
   const [pin, setPin] = useState('');
   const [name, setName] = useState('');
   const [section, setSection] = useState('');
   const [avatar, setAvatar] = useState('😎');
-  const [accentColor, setAccentColor] = useState('#6C63FF');
   const [error, setError] = useState('');
   const { socket, isConnected, setParticipant } = useSocket();
   const navigate = useNavigate();
@@ -74,7 +72,7 @@ export default function Join() {
       return;
     }
 
-    socket.emit('participant:join', { pin, name, section, avatar, accentColor });
+    socket.emit('participant:join', { pin, name, section, avatar });
   };
 
   return (
@@ -140,33 +138,6 @@ export default function Join() {
                     >
                       {emoji}
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Color Selector */}
-              <div>
-                <label style={{ display: 'block', marginBottom: 'var(--space-xs)', fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
-                  Choose Accent Color
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 'var(--space-xs)' }}>
-                  {ACCENT_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setAccentColor(color)}
-                      style={{
-                        height: '32px',
-                        borderRadius: 'var(--radius-full)',
-                        background: color,
-                        border: accentColor === color ? '2px solid white' : '1px solid rgba(255, 255, 255, 0.2)',
-                        boxShadow: accentColor === color ? `0 0 10px ${color}` : 'none',
-                        cursor: 'pointer',
-                        transform: accentColor === color ? 'scale(1.1)' : 'scale(1)',
-                        transition: 'all var(--transition-fast)'
-                      }}
-                      aria-label={`Accent color ${color}`}
-                    />
                   ))}
                 </div>
               </div>

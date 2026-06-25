@@ -2,21 +2,12 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import html2canvas from 'html2canvas';
-import { apiPath } from '../../config/api';
 
 export default function End() {
   const { resultCard, socket } = useSocket();
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [branding, setBranding] = useState({ event_name: 'Quiz Bee', primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef', logo_url: '' });
-
-  useEffect(() => {
-    fetch(apiPath('/api/branding'))
-      .then(res => res.json())
-      .then(data => { if (data.id) setBranding(data); })
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     if (!socket) return;
@@ -73,7 +64,7 @@ export default function End() {
             width: '100%',
             maxWidth: '320px',
             aspectRatio: '9/16', // Instagram Story format
-            background: `linear-gradient(135deg, ${branding.primary_color_hex}, ${branding.accent_color_hex})`,
+            background: '#1040C0',
             borderRadius: '16px',
             padding: '24px',
             display: 'flex',
@@ -90,9 +81,8 @@ export default function End() {
           <div style={{ position: 'absolute', top: '-10%', left: '-20%', width: '150%', height: '50%', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', zIndex: 0 }}></div>
 
           <div style={{ zIndex: 1, textAlign: 'center', width: '100%' }}>
-            {branding.logo_url && <img src={branding.logo_url} alt="Logo" crossOrigin="anonymous" style={{ height: '40px', objectFit: 'contain', marginBottom: '10px' }} />}
             <div style={{ fontSize: '1.2rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.9 }}>
-              {branding.event_name}
+              JPCS Quiz Game
             </div>
           </div>
 
@@ -103,7 +93,7 @@ export default function End() {
               borderRadius: '50%', 
               display: 'flex', alignItems: 'center', justifyContent: 'center', 
               fontSize: '3.5rem', 
-              border: `4px solid ${resultCard.accentColor || 'white'}`,
+              border: '4px solid white',
               marginBottom: '16px',
               boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
             }}>

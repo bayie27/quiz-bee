@@ -14,7 +14,7 @@ module.exports = (io, socket) => {
   // ──────────────────────────────────────────────
   // participant:join — FR-06, FR-08, FR-09, FR-10
   // ──────────────────────────────────────────────
-  socket.on('participant:join', ({ name, section, pin, avatar, accentColor }) => {
+  socket.on('participant:join', ({ name, section, pin, avatar }) => {
     // Validate required fields
     if (!name || !name.trim()) {
       return socket.emit('join:error', { reason: 'Display name is required.' });
@@ -31,8 +31,7 @@ module.exports = (io, socket) => {
       name,
       section,
       pin,
-      avatar,
-      accentColor
+      avatar
     });
 
     if (!result.success) {
@@ -48,8 +47,7 @@ module.exports = (io, socket) => {
       sessionToken: result.participant.sessionToken,
       name: result.participant.name,
       section: result.participant.section,
-      avatar: result.participant.avatar,
-      accentColor: result.participant.accentColor
+      avatar: result.participant.avatar
     });
 
     // Broadcast updated participant list to everyone (FR-47, FR-52)
@@ -89,7 +87,6 @@ module.exports = (io, socket) => {
       name: result.participant.name,
       section: result.participant.section,
       avatar: result.participant.avatar,
-      accentColor: result.participant.accentColor,
       restored: true,
       score: result.participant.score,
       streak: result.participant.streak,
