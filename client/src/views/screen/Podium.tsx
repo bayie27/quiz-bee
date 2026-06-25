@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,17 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function Podium() {
   const { podiumData, socket } = useSocket();
   const navigate = useNavigate();
-  const [branding, setBranding] = useState({ primary_color_hex: '#8b5cf6', accent_color_hex: '#d946ef' });
-  
-  // Animation Sequence State
-  const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    fetch('/api/branding')
-      .then(res => res.json())
-      .then(data => { if (data.id) setBranding(data); })
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     if (!podiumData) navigate('/screen/lobby');
@@ -73,7 +62,7 @@ export default function Podium() {
       padding: '40px',
       overflow: 'hidden'
     }}>
-      <h1 style={{ fontSize: '4rem', textAlign: 'center', color: branding.primary_color_hex, marginBottom: '20px' }}>
+      <h1 style={{ fontSize: '4rem', textAlign: 'center', color: '#8b5cf6', marginBottom: '20px' }}>
         Final Results
       </h1>
 
@@ -88,11 +77,11 @@ export default function Podium() {
               style={{ display: 'flex', gap: '20px', marginBottom: '60px' }}
             >
               {runnersUp.map((p: any) => (
-                <div key={p.rank} className="glass-card" style={{ padding: '15px 30px', display: 'flex', alignItems: 'center', gap: '15px', borderBottom: `4px solid ${branding.accent_color_hex}` }}>
+                <div key={p.rank} className="glass-card" style={{ padding: '15px 30px', display: 'flex', alignItems: 'center', gap: '15px', borderBottom: `4px solid ${'#d946ef'}` }}>
                   <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>{p.rank}th</span>
                   <span style={{ fontSize: '2rem' }}>{p.avatar || '😎'}</span>
                   <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{p.name}</span>
-                  <span style={{ fontSize: '1.5rem', color: branding.accent_color_hex, marginLeft: '20px' }}>{p.score}</span>
+                  <span style={{ fontSize: '1.5rem', color: '#d946ef', marginLeft: '20px' }}>{p.score}</span>
                 </div>
               ))}
             </motion.div>

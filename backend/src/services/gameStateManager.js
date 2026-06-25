@@ -128,10 +128,10 @@ class GameStateManager {
    * duplicate name+section (FR-09), blocked list (locked req).
    *
    * @param {string} socketId
-   * @param {object} data — { name, section, pin, avatar?, accentColor? }
+   * @param {object} data — { name, section, pin, avatar? }
    * @returns {{ success: boolean, error?: string, participant?: object }}
    */
-  addParticipant(socketId, { name, section, pin, avatar, accentColor }) {
+  addParticipant(socketId, { name, section, pin, avatar }) {
     // Validate PIN (FR-06)
     if (pin !== this.roomConfig.roomPin) {
       return { success: false, error: 'Invalid room PIN.' };
@@ -174,7 +174,6 @@ class GameStateManager {
       name: name.trim(),
       section: section.trim(),
       avatar: avatar || null,
-      accentColor: accentColor || null,
       score: 0,
       streak: 0,
       bestStreak: 0,
@@ -669,8 +668,7 @@ class GameStateManager {
       id: p.id,
       name: p.name,
       section: p.section,
-      avatar: p.avatar,
-      accentColor: p.accentColor
+      avatar: p.avatar
     }));
   }
 
@@ -681,9 +679,8 @@ class GameStateManager {
     this.recalculateRanks();
     return Array.from(this.participants.values()).map(p => ({
       participant_name: p.name,
-      section_year: p.section,
+      section: p.section,
       avatar: p.avatar,
-      accent_color: p.accentColor,
       final_score: p.score,
       final_rank: p.rank,
       best_streak: p.bestStreak,

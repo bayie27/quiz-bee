@@ -47,3 +47,6 @@ editor-debug.png
 # Agent stuff
 .agents/
 skills-lock.json
+
+# Local implementation backlog
+tasks-jpcs-quiz-game.md

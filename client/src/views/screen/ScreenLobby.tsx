@@ -1,32 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function ScreenLobby() {
-  const { registerScreen, isScreenRegistered, lobbyData, socket } = useSocket();
+  const { isScreenRegistered, lobbyData, socket } = useSocket();
   const navigate = useNavigate();
-  const [branding, setBranding] = useState({
-    event_name: 'Quiz Bee Event',
-    primary_color_hex: '#8b5cf6',
-    accent_color_hex: '#d946ef',
-    logo_url: ''
-  });
-
-  // Fetch branding on mount
-  useEffect(() => {
-    fetch('/api/branding')
-      .then(res => res.json())
-      .then(data => {
-        if (data.id) setBranding(data);
-      })
-      .catch(console.error);
-  }, []);
 
   // Register screen once socket is ready
   useEffect(() => {
     if (socket) {
-      registerScreen();
+      socket.emit('screen:register');
     }
   }, [socket]);
 
@@ -49,7 +33,6 @@ export default function ScreenLobby() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: `linear-gradient(135deg, ${branding.primary_color_hex}20, ${branding.accent_color_hex}20)`,
       backgroundColor: '#0f172a',
       color: 'white',
       display: 'flex',
@@ -60,11 +43,10 @@ export default function ScreenLobby() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '60px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {branding.logo_url && <img src={branding.logo_url} alt="Logo" style={{ height: '80px', objectFit: 'contain' }} />}
-          <h1 style={{ fontSize: '4rem', fontWeight: 'bold', margin: 0 }}>{branding.event_name}</h1>
+          <h1 style={{ fontSize: '4rem', fontWeight: 'bold', margin: 0 }}>JPCS Quiz Game</h1>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <h2 style={{ fontSize: '2rem', color: branding.accent_color_hex, margin: 0 }}>Join at {joinUrl}</h2>
+          <h2 style={{ fontSize: '2rem', color: '#d946ef', margin: 0 }}>Join at {joinUrl}</h2>
         </div>
       </div>
 
@@ -78,7 +60,7 @@ export default function ScreenLobby() {
           
           <div className="glass-card" style={{ width: '100%', textAlign: 'center', padding: '30px' }}>
             <div style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Room PIN</div>
-            <div style={{ fontSize: '6rem', fontWeight: 'bold', letterSpacing: '8px', color: branding.primary_color_hex }}>
+            <div style={{ fontSize: '6rem', fontWeight: 'bold', letterSpacing: '8px', color: '#8b5cf6' }}>
               {lobbyData?.roomPin || '------'}
             </div>
           </div>
@@ -88,7 +70,7 @@ export default function ScreenLobby() {
         <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
             <h2 style={{ fontSize: '2.5rem', margin: 0 }}>Participants</h2>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', background: branding.primary_color_hex, padding: '10px 30px', borderRadius: '40px' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', background: '#8b5cf6', padding: '10px 30px', borderRadius: '40px' }}>
               {lobbyData?.count || 0}
             </div>
           </div>
@@ -106,7 +88,7 @@ export default function ScreenLobby() {
                 background: 'rgba(255,255,255,0.1)', 
                 padding: '15px 20px', 
                 borderRadius: '12px',
-                borderLeft: `4px solid ${p.accentColor || branding.primary_color_hex}`,
+                borderLeft: `4px solid #8b5cf6`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '15px',
@@ -129,3 +111,4 @@ export default function ScreenLobby() {
     </div>
   );
 }
+
