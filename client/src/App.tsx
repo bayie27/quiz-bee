@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 import Join from './views/participant/Join';
 import Lobby from './views/participant/Lobby';
@@ -50,6 +50,23 @@ function SoundToggleIcon({ muted }: { muted: boolean }) {
 
 function MobileLayout({ children }: MobileLayoutProps) {
   const { isMuted, setIsMuted } = useSocket();
+  const navigate = useNavigate();
+  const [notice, setNotice] = useState(() => sessionStorage.getItem('quizbee_notice') || '');
+
+  useEffect(() => {
+    const handleKicked = () => {
+      const message = 'You were removed from the game by the host.';
+      sessionStorage.setItem('quizbee_notice', message);
+      setNotice(message);
+      navigate('/join', { replace: true });
+    };
+    window.addEventListener('quizbee:kicked', handleKicked);
+    return () => window.removeEventListener('quizbee:kicked', handleKicked);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (notice) sessionStorage.removeItem('quizbee_notice');
+  }, [notice]);
 
   return (
     <div className="mobile-layout">
@@ -62,6 +79,7 @@ function MobileLayout({ children }: MobileLayoutProps) {
           <SoundToggleIcon muted={isMuted} />
         </button>
       </header>
+      {notice && <div className="mobile-notice" role="status">{notice}</div>}
       {children}
     </div>
   );

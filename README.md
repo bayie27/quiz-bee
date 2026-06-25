@@ -115,7 +115,7 @@ cd quiz-bee
 
 ## Question Import Format
 
-The host editor accepts CSV and JSON imports from the **Import CSV or JSON** control.
+The host editor separates file and pasted-data imports: use **Import CSV File** for `.csv` uploads and **Paste JSON** for pasted JSON arrays.
 
 ### CSV Headers
 Use this exact header row:

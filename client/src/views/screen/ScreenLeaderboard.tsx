@@ -21,7 +21,7 @@ export default function ScreenLeaderboard() {
 
   return (
     <main className="screen-shell">
-      <header className="screen-header"><h1 className="screen-title">Top Participants</h1><div className="screen-meta">Live Rank</div></header>
+      <header className="screen-header"><h1 className="screen-title">Top Participants</h1><div className="brand-lockup screen-brand"><span className="brand-mark" aria-hidden="true"><span className="brand-dot" /><span className="brand-square" /><span className="brand-triangle" /></span><span>Live Rank</span></div></header>
       <section className="bau-stack" style={{ flex: 1, overflow: 'hidden' }}>
         {leaderboardData.map((p: any, idx: number) => (
           <div key={idx} className="rank-row animate-fade-in-up">

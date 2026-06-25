@@ -288,8 +288,12 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
     newSocket.on('participant:kicked', () => {
       localStorage.removeItem('quizbee_session');
       setParticipant(null);
-      alert('You have been kicked from the game.');
-      window.location.href = '/join';
+      setCurrentQuestion(null);
+      setSkippedQuestion(null);
+      setRevealData(null);
+      setLeaderboardData(null);
+      setResultCard(null);
+      window.dispatchEvent(new CustomEvent('quizbee:kicked'));
     });
 
     newSocket.on('room:reset', (data: any = {}) => {
