@@ -48,7 +48,7 @@ function MobileLayout({ children }: MobileLayoutProps) {
           <span>JPCS Quiz Game</span>
         </div>
         <button className="bau-icon-button" onClick={() => setIsMuted(!isMuted)} aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'} type="button">
-          {isMuted ? 'OFF' : 'ON'}
+          {isMuted ? 'Muted' : 'Sound'}
         </button>
       </header>
       {children}

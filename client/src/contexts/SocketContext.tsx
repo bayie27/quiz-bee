@@ -32,6 +32,7 @@ export interface SocketContextType {
   lobbyData: LobbyData;
   timer: Timer;
   currentQuestion: any;
+  skippedQuestion: any;
   revealData: any;
   isGameEnded: boolean;
   resultCard: any;
@@ -77,6 +78,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
   const [lobbyData, setLobbyData] = useState<LobbyData>({ participants: [], count: 0 });
   const [timer, setTimer] = useState<Timer>({ remaining: 0, paused: false });
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
+  const [skippedQuestion, setSkippedQuestion] = useState<any>(null);
   const [revealData, setRevealData] = useState<any>(null);
   const [isGameEnded, setIsGameEnded] = useState(false);
   const [resultCard, setResultCard] = useState<any>(null);
@@ -135,6 +137,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
     newSocket.on('question:live', (q: any) => {
       setCurrentQuestion(q);
       setRevealData(null);
+      setSkippedQuestion(null);
       setLeaderboardData(null);
       setTimer({ remaining: q.timer, paused: false });
       setHostPreview(null);
@@ -146,7 +149,8 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       setTimer(prev => ({ ...prev, remaining: 0 }));
     });
 
-    newSocket.on('question:skipped', () => {
+    newSocket.on('question:skipped', (data: any) => {
+      setSkippedQuestion(data || {});
       setCurrentQuestion(null);
       setRevealData(null);
       setTimer({ remaining: 0, paused: false });
@@ -229,6 +233,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       setHostAnswerCount({ answered: 0, total: 0, percentage: 0 });
       setTimer({ remaining: 0, paused: false });
       setCurrentQuestion(null);
+      setSkippedQuestion(null);
       setRevealData(null);
       setLeaderboardData(null);
       setPodiumData(null);
@@ -290,6 +295,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       });
       setTimer({ remaining: 0, paused: false });
       setCurrentQuestion(null);
+      setSkippedQuestion(null);
       setRevealData(null);
       setResultCard(null);
       setHostPreview(null);
@@ -329,6 +335,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       lobbyData,
       timer,
       currentQuestion,
+      skippedQuestion,
       revealData,
       isGameEnded,
       resultCard,

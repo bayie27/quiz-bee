@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function Question() {
-  const { socket, currentQuestion, timer, revealData, isGameEnded, playTick } = useSocket();
+  const { socket, currentQuestion, skippedQuestion, timer, revealData, isGameEnded, playTick } = useSocket();
   const navigate = useNavigate();
   const [answer, setAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,6 +28,18 @@ export default function Question() {
     setError('');
     socket.emit('participant:answer', { questionId: currentQuestion.questionId, answer: val ?? answer });
   };
+
+  if (!currentQuestion && skippedQuestion) {
+    return (
+      <main className="bau-mobile-screen bau-center">
+        <section className="bau-card yellow text-center bau-stack animate-fade-in-up">
+          <div className="bau-kicker">Question Skipped</div>
+          <h1 className="bau-title-md">Host skipped this question.</h1>
+          <p className="text-muted">Waiting for the next question.</p>
+        </section>
+      </main>
+    );
+  }
 
   if (!currentQuestion) return null;
   const isTimeUp = timer.remaining <= 0;

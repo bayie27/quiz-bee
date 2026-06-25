@@ -9,6 +9,7 @@ export default function End() {
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
 
   useEffect(() => {
     if (!socket) return;
@@ -20,15 +21,23 @@ export default function End() {
   const handleDownload = async () => {
     if (!cardRef.current) return;
     setIsGenerating(true);
+    setDownloadError('');
     try {
       const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true, backgroundColor: '#f0f0f0' });
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('Canvas export failed');
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = 'jpcs-result-' + (resultCard?.name || 'player') + '.png';
-      link.href = canvas.toDataURL('image/png');
+      const safeName = String(resultCard?.name || 'player').replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
+      link.download = 'jpcs-result-' + safeName + '.png';
+      link.href = url;
+      document.body.appendChild(link);
       link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to generate result card', err);
-      alert('Failed to generate image. Please try again.');
+      setDownloadError('Failed to generate image. Please try again.');
     }
     setIsGenerating(false);
   };
@@ -58,6 +67,7 @@ export default function End() {
           <div className="bau-card yellow compact no-shadow"><strong>Best Streak: {resultCard.bestStreak}</strong></div>
         </section>
       </div>
+      {downloadError && <p className="bau-error" role="alert">{downloadError}</p>}
       <button onClick={handleDownload} disabled={isGenerating} className="bau-button primary full" type="button">{isGenerating ? 'Generating' : 'Save Result Card'}</button>
       <p className="bau-meta text-center">Save to your camera roll to share.</p>
     </main>

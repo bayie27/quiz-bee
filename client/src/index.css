@@ -197,3 +197,9 @@ img { max-width: 100%; display: block; }
 .screen-option:nth-child(5) { background: var(--color-success); color: #fff; }
 .screen-option:nth-child(6) { background: #7b2cbf; color: #fff; }
 @media (max-width: 520px) { .option-editor-row { grid-template-columns: 28px 44px minmax(0, 1fr); } .option-editor-row .bau-button { grid-column: 3; width: 100%; } }
+
+.render-join-link { font-size: clamp(1.1rem, 1.6vw, 1.8rem); max-width: 760px; text-align: right; overflow-wrap: anywhere; color: var(--color-secondary); background: var(--color-yellow); border: 3px solid var(--color-border); box-shadow: var(--shadow-sm); padding: var(--space-sm) var(--space-md); }
+.editor-modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: var(--space-lg); background: rgba(18, 18, 18, .48); }
+.editor-modal { width: min(520px, 100%); }
+.editor-toast { position: fixed; right: var(--space-lg); bottom: var(--space-lg); z-index: 60; max-width: min(420px, calc(100vw - 32px)); border: 3px solid var(--color-border); box-shadow: var(--shadow-md); padding: var(--space-md); background: var(--color-yellow); color: var(--color-foreground); font-weight: 900; }
+.editor-toast.error { background: var(--color-primary); color: #fff; }

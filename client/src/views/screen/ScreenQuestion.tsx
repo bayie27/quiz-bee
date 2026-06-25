@@ -3,23 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function ScreenQuestion() {
-  const { currentQuestion, revealData, isGameEnded, timer, socket, gameCountdown } = useSocket();
+  const { currentQuestion, skippedQuestion, revealData, isGameEnded, timer, socket, gameCountdown } = useSocket();
   const navigate = useNavigate();
 
   useEffect(() => { if (revealData) navigate('/screen/reveal'); if (isGameEnded) navigate('/screen/podium'); }, [revealData, isGameEnded, navigate]);
-  useEffect(() => {
-    if (!socket) return;
-    const onQuestionSkipped = () => navigate('/screen/lobby');
-    socket.on('question:skipped', onQuestionSkipped);
-    return () => { socket.off('question:skipped', onQuestionSkipped); };
-  }, [socket, navigate]);
-
   if (!currentQuestion && gameCountdown) {
     return (
       <main className="screen-shell bau-center text-center">
         <section className="bau-card blue bau-stack animate-pulse" style={{ width: 'min(760px, 100%)', margin: 'auto' }}>
           <div className="screen-meta">Question 1 starts in</div>
           <div className="stat-value" style={{ fontSize: 'clamp(7rem, 18vw, 15rem)' }}>{gameCountdown.remaining}</div>
+        </section>
+      </main>
+    );
+  }
+  if (!currentQuestion && skippedQuestion) {
+    return (
+      <main className="screen-shell bau-center text-center">
+        <section className="bau-card yellow bau-stack" style={{ width: 'min(900px, 100%)', margin: 'auto' }}>
+          <div className="screen-meta">Question Skipped</div>
+          <h1 className="screen-title" style={{ fontSize: 'clamp(3rem, 8vw, 8rem)' }}>Waiting for Next Question</h1>
         </section>
       </main>
     );

@@ -64,6 +64,9 @@ export default function Editor() {
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
   const [jsonImportText, setJsonImportText] = useState('');
+  const [modalMode, setModalMode] = useState<'create' | 'rename' | 'delete' | null>(null);
+  const [modalText, setModalText] = useState('');
+  const [toast, setToast] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (!isHostAuthenticated) {
@@ -149,37 +152,80 @@ export default function Editor() {
     return { ...q, options: null };
   };
 
+  const showToast = (message: string, tone: 'success' | 'error' = 'success') => {
+    setToast({ message, tone });
+    window.setTimeout(() => setToast(null), 3200);
+  };
+
+  const openCreateModal = () => {
+    setModalText('');
+    setModalMode('create');
+  };
+
+  const openRenameModal = () => {
+    const selectedSet = questionSets.find(set => String(set.id) === String(selectedSetId));
+    if (!selectedSet) return;
+    setModalText(selectedSet.name || selectedSet.title || '');
+    setModalMode('rename');
+  };
+
+  const openDeleteModal = () => {
+    setModalText('');
+    setModalMode('delete');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setModalText('');
+  };
+
   const handleCreateSet = async () => {
-    const name = prompt('Enter name for the new Question Set:');
-    if (!name) return;
+    const name = modalText.trim();
+    if (!name) return showToast('Question set name is required.', 'error');
 
     const res = await fetch(apiPath('/api/question-sets'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, scoring_config: { base_points: 1000, speed_bonus_max: 500 } })
     });
+    if (!res.ok) return showToast('Failed to create question set.', 'error');
     const newSet = await res.json();
     await fetchSets();
     setSelectedSetId(newSet.id);
+    closeModal();
+    showToast('Question set created.');
+  };
+
+  const handleRenameSet = async () => {
+    const name = modalText.trim();
+    if (!selectedSetId || !name) return showToast('Question set name is required.', 'error');
+
+    const res = await fetch(apiPath(`/api/question-sets/${selectedSetId}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    if (!res.ok) return showToast('Failed to rename question set.', 'error');
+    await fetchSets();
+    closeModal();
+    showToast('Question set renamed.');
   };
 
   const handleDeleteSet = async () => {
-    const selectedSet = questionSets.find(set => String(set.id) === String(selectedSetId));
-    if (!selectedSet) return;
-    const confirmed = window.confirm(`Delete "${selectedSet.name || selectedSet.title}" and all of its questions? This cannot be undone.`);
-    if (!confirmed) return;
-
+    if (!selectedSetId) return;
     const res = await fetch(apiPath(`/api/question-sets/${selectedSetId}`), { method: 'DELETE' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || 'Failed to delete question set.');
+      showToast(data.error || 'Failed to delete question set.', 'error');
       return;
     }
 
     setSelectedSetId('');
     setQuestions([]);
     setActiveQuestionId(null);
+    closeModal();
     await fetchSets();
+    showToast('Question set deleted.');
   };
 
   const handleSaveQuestions = async () => {
@@ -187,7 +233,7 @@ export default function Editor() {
     const prepared = questions.map(q => serializeQuestion(q));
     const invalid = prepared.find(q => q.type === 'mcq' && (!Array.isArray(q.options) || q.options.length < MIN_MCQ_OPTIONS || q.options.some((opt: any) => !opt.text.trim())));
     if (invalid) {
-      alert('Every multiple-choice option must have text before saving.');
+      showToast('Every multiple-choice option must have text before saving.', 'error');
       return;
     }
 
@@ -197,9 +243,9 @@ export default function Editor() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questions: prepared })
       });
-      alert(res.ok ? 'Questions saved successfully!' : 'Failed to save questions.');
+      showToast(res.ok ? 'Questions saved successfully.' : 'Failed to save questions.', res.ok ? 'success' : 'error');
     } catch (e: any) {
-      alert('Error saving questions: ' + e.message);
+      showToast('Error saving questions: ' + e.message, 'error');
     }
   };
 
@@ -267,14 +313,14 @@ export default function Editor() {
   );
 
   const handleExportJSON = () => {
-    if (questions.length === 0) return alert('No questions to export');
+    if (questions.length === 0) return showToast('No questions to export.', 'error');
     const cleanQuestions = questions.map(({ _dndId, id, ...rest }) => serializeQuestion(rest));
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(cleanQuestions, null, 2));
     downloadData(dataStr, `question_set_${selectedSetId}.json`);
   };
 
   const handleExportCSV = () => {
-    if (questions.length === 0) return alert('No questions to export');
+    if (questions.length === 0) return showToast('No questions to export.', 'error');
     const headers = ['text', 'type', 'timer_seconds', 'correct_answer', 'option_a', 'option_b', 'option_c', 'option_d', 'option_e', 'option_f'];
     const rows = questions.map(q => {
       const serialized = serializeQuestion(q);
@@ -329,7 +375,7 @@ export default function Editor() {
     const validated = importedQuestions.map((q, index) => validateImportedQuestion(q, index + 1));
     setQuestions([...questions, ...validated]);
     if (validated.length > 0) setActiveQuestionId(validated[0]._dndId);
-    alert(`Successfully imported ${validated.length} questions! Click "Save All Changes" to persist.`);
+    showToast(`Successfully imported ${validated.length} questions. Click Save All Changes to persist.`);
   };
 
   const handleCsvFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -343,7 +389,7 @@ export default function Editor() {
         if (!file.name.endsWith('.csv')) throw new Error('Unsupported file format. Please upload a .csv file');
         importQuestions(parseCsvQuestions(content));
       } catch (err: any) {
-        alert(`CSV Import Failed: ${err.message}`);
+        showToast(`CSV Import Failed: ${err.message}`, 'error');
       }
     };
     reader.readAsText(file);
@@ -358,7 +404,7 @@ export default function Editor() {
       setJsonImportText('');
       setIsJsonImportOpen(false);
     } catch (err: any) {
-      alert(`JSON Import Failed: ${err.message}`);
+      showToast(`JSON Import Failed: ${err.message}`, 'error');
     }
   };
   const parseCsvQuestions = (content: string) => {
@@ -436,8 +482,9 @@ export default function Editor() {
             <option value="">Select Question Set to Edit</option>
             {questionSets.map(s => <option key={s.id} value={s.id}>{s.name || s.title}</option>)}
           </select>
-          <button onClick={handleCreateSet} className="bau-button secondary" type="button">+ New Set</button>
-          {selectedSetId && <button onClick={handleDeleteSet} className="bau-button danger" type="button">Delete Set</button>}
+          <button onClick={openCreateModal} className="bau-button secondary" type="button">+ New Set</button>
+          {selectedSetId && <button onClick={openRenameModal} className="bau-button secondary" type="button">Rename Set</button>}
+          {selectedSetId && <button onClick={openDeleteModal} className="bau-button danger" type="button">Delete Set</button>}
           {selectedSet && <span className="bau-kicker">Editing: {selectedSet.name || selectedSet.title}</span>}
         </div>
 
@@ -526,6 +573,34 @@ export default function Editor() {
             </div>
           </>
         )}
+
+        {modalMode && (
+          <div className="editor-modal-backdrop" role="presentation">
+            <section className="bau-card editor-modal" role="dialog" aria-modal="true" aria-labelledby="editor-modal-title">
+              {modalMode === 'delete' ? (
+                <div className="bau-stack">
+                  <h2 id="editor-modal-title" className="bau-title-md">Delete Question Set</h2>
+                  <p>Delete <strong>{selectedSet?.name || selectedSet?.title}</strong> and all of its questions? This cannot be undone.</p>
+                  <div className="bau-row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <button className="bau-button ghost" type="button" onClick={closeModal}>Cancel</button>
+                    <button className="bau-button danger" type="button" onClick={handleDeleteSet}>Delete Set</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bau-stack">
+                  <h2 id="editor-modal-title" className="bau-title-md">{modalMode === 'create' ? 'New Question Set' : 'Rename Question Set'}</h2>
+                  <label><span className="bau-label">Set Name</span><input className="bau-input" value={modalText} onChange={(e) => setModalText(e.target.value)} autoFocus /></label>
+                  <div className="bau-row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <button className="bau-button ghost" type="button" onClick={closeModal}>Cancel</button>
+                    <button className="bau-button primary" type="button" onClick={modalMode === 'create' ? handleCreateSet : handleRenameSet}>{modalMode === 'create' ? 'Create Set' : 'Save Name'}</button>
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+
+        {toast && <div className={'editor-toast ' + toast.tone}>{toast.message}</div>}
       </main>
     </div>
   );
