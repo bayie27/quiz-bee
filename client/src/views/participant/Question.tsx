@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
@@ -10,149 +10,62 @@ export default function Question() {
   const [isLocked, setIsLocked] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (revealData) navigate('/reveal');
-    if (isGameEnded) navigate('/end');
-  }, [revealData, isGameEnded, navigate]);
-
+  useEffect(() => { if (revealData) navigate('/reveal'); if (isGameEnded) navigate('/end'); }, [revealData, isGameEnded, navigate]);
   useEffect(() => {
     if (!socket) return;
-    
-    const onAnswerLocked = () => {
-      setIsSubmitting(false);
-      setIsLocked(true);
-    };
-
-    const onAnswerError = ({ reason }: { reason: string }) => {
-      setIsSubmitting(false);
-      setError(reason);
-    };
-
+    const onAnswerLocked = () => { setIsSubmitting(false); setIsLocked(true); };
+    const onAnswerError = ({ reason }: { reason: string }) => { setIsSubmitting(false); setError(reason); };
     socket.on('answer:locked', onAnswerLocked);
     socket.on('answer:error', onAnswerError);
-
-    return () => {
-      socket.off('answer:locked', onAnswerLocked);
-      socket.off('answer:error', onAnswerError);
-    };
+    return () => { socket.off('answer:locked', onAnswerLocked); socket.off('answer:error', onAnswerError); };
   }, [socket]);
-
-  // If question changes, reset lock
-  useEffect(() => {
-    setIsLocked(false);
-    setAnswer('');
-    setError('');
-  }, [currentQuestion?.questionId]);
-
-  // Play tick sound for the last 5 seconds of countdown
-  useEffect(() => {
-    if (timer.remaining <= 5 && timer.remaining > 0 && !isLocked && !timer.paused) {
-      playTick();
-    }
-  }, [timer.remaining, timer.paused, isLocked, playTick]);
+  useEffect(() => { setIsLocked(false); setAnswer(''); setError(''); }, [currentQuestion?.questionId]);
+  useEffect(() => { if (timer.remaining <= 5 && timer.remaining > 0 && !isLocked && !timer.paused) playTick(); }, [timer.remaining, timer.paused, isLocked, playTick]);
 
   const handleSubmit = (val?: string) => {
     if (isLocked || isSubmitting || timer.remaining <= 0 || timer.paused || !socket) return;
     setIsSubmitting(true);
     setError('');
-    const finalAnswer = val !== undefined ? val : answer;
-    socket.emit('participant:answer', { questionId: currentQuestion.questionId, answer: finalAnswer });
+    socket.emit('participant:answer', { questionId: currentQuestion.questionId, answer: val ?? answer });
   };
 
   if (!currentQuestion) return null;
-
   const isTimeUp = timer.remaining <= 0;
   const disabled = isLocked || isSubmitting || isTimeUp || timer.paused;
 
   return (
-    <div className="container" style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: 'var(--space-md)', paddingBottom: 'var(--space-xl)' }}>
-      {/* Timer Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
-        <h3 className="text-muted">Q{currentQuestion.questionNumber} / {currentQuestion.totalQuestions}</h3>
-        <div style={{
-          background: isTimeUp ? 'var(--color-danger)' : 'var(--bg-card)',
-          padding: 'var(--space-sm) var(--space-md)',
-          borderRadius: 'var(--radius-full)',
-          fontWeight: 'bold',
-          transition: 'var(--transition-base)'
-        }}>
-          {timer.remaining}s
-        </div>
+    <main className="bau-mobile-screen">
+      <div className="bau-row between">
+        <div className="bau-kicker">Q{currentQuestion.questionNumber} / {currentQuestion.totalQuestions}</div>
+        <div className={'screen-timer ' + (isTimeUp ? 'danger' : '')} style={{ minWidth: 92, fontSize: '2.5rem', padding: '8px 12px' }}>{timer.remaining}</div>
       </div>
-
-      <div className="glass-card animate-fade-in-up" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ marginBottom: 'var(--space-lg)', fontSize: '1.25rem' }}>{currentQuestion.text}</h2>
-        {error && <p className="text-danger text-center" style={{ marginBottom: 'var(--space-md)' }}>{error}</p>}
-        
+      <section className="bau-card animate-fade-in-up bau-stack" style={{ flex: 1 }}>
+        <h1 className="bau-title-md">{currentQuestion.text}</h1>
+        {error && <p className="bau-error" role="alert">{error}</p>}
         {isLocked ? (
-          <div className="animate-pulse" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{
-              width: '80px', height: '80px', borderRadius: '50%',
-              background: 'var(--color-success)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              marginBottom: 'var(--space-md)', fontSize: '2rem'
-            }}>
-              🔒
-            </div>
-            <h3>Answer Locked!</h3>
-            <p className="text-muted">Waiting for others...</p>
+          <div className="bau-stack text-center" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <div className="bau-card yellow compact no-shadow" style={{ width: 88, height: 88, display: 'grid', placeItems: 'center', fontWeight: 900 }}>LOCK</div>
+            <h2 className="bau-title-md">Answer Locked</h2>
+            <p className="text-muted">Waiting for the reveal.</p>
           </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 'var(--space-sm)' }}>
+          <div className="bau-stack" style={{ marginTop: 'auto' }}>
             {currentQuestion.type === 'identification' ? (
-              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-                <input
-                  type="text"
-                  placeholder="Type your answer..."
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  disabled={disabled}
-                  style={inputStyle}
-                />
-                <button type="submit" disabled={disabled || !answer.trim()} style={{ ...buttonStyle, opacity: disabled ? 0.5 : 1 }}>Submit</button>
+              <form className="bau-form" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                <input className="bau-input" type="text" placeholder="Type your answer" value={answer} onChange={(e) => setAnswer(e.target.value)} disabled={disabled} />
+                <button className="bau-button primary full" type="submit" disabled={disabled || !answer.trim()}>Submit</button>
               </form>
             ) : (
               currentQuestion.options?.map((opt: any, i: number) => (
-                <button
-                  key={i}
-                  onClick={() => handleSubmit(opt.label || opt.text)}
-                  disabled={disabled}
-                  style={{
-                    ...buttonStyle,
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    textAlign: 'left',
-                    opacity: disabled ? 0.5 : 1
-                  }}
-                >
-                  {opt.label && <strong style={{ marginRight: 'var(--space-sm)', color: 'var(--color-primary-light)' }}>{opt.label}:</strong>}
-                  {opt.text}
+                <button key={i} className="bau-button answer-button" type="button" onClick={() => handleSubmit(opt.label || opt.text)} disabled={disabled}>
+                  <span className="answer-label">{opt.label}</span>
+                  <span>{opt.text}</span>
                 </button>
               ))
             )}
           </div>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: 'var(--space-md)',
-  borderRadius: 'var(--radius-md)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  background: 'rgba(0, 0, 0, 0.2)',
-  color: 'white',
-  fontSize: '1rem',
-  outline: 'none',
-  width: '100%'
-};
-
-const buttonStyle: React.CSSProperties = {
-  padding: 'var(--space-md)',
-  borderRadius: 'var(--radius-md)',
-  color: 'white',
-  fontWeight: 'bold',
-  fontSize: '1.1rem',
-  cursor: 'pointer'
-};

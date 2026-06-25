@@ -35,9 +35,9 @@ function SortableQuestionItem({ id, question, isActive, onClick, onDelete }: Sor
     transition,
     padding: '10px',
     margin: '8px 0',
-    backgroundColor: isActive ? 'var(--color-primary-dark)' : 'var(--bg-card)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '4px',
+    backgroundColor: isActive ? 'var(--color-yellow)' : 'var(--color-surface)',
+    border: '3px solid var(--color-border)',
+    borderRadius: '0',
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'space-between',
@@ -47,14 +47,14 @@ function SortableQuestionItem({ id, question, isActive, onClick, onDelete }: Sor
   return (
     <div ref={setNodeRef} style={style} onClick={onClick}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }} {...attributes} {...listeners}>
-        <span style={{ cursor: 'grab', color: 'var(--text-muted)' }}>☰</span>
+        <span style={{ cursor: 'grab', color: 'var(--text-secondary)' }}>☰</span>
         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>
           {question.text || 'New Question'}
         </span>
       </div>
       <button 
         onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-        style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '1.2rem' }}
+        className="bau-button danger" style={{ minHeight: 36, padding: '4px 10px' }}
       >
         ×
       </button>
@@ -421,34 +421,32 @@ export default function Editor() {
     : (activeQ?.options || []);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column' }}>
-      <nav style={{ background: 'var(--bg-secondary)', padding: 'var(--space-md) var(--space-xl)', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <h2>JPCS Quiz Game Host</h2>
-        <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-          <Link to="/host" style={navLink}>Dashboard</Link>
-        </div>
+    <div className="host-shell">
+      <nav className="host-nav">
+        <div className="brand-lockup"><span className="brand-mark" aria-hidden="true"><span className="brand-dot" /><span className="brand-square" /><span className="brand-triangle" /></span><span>JPCS Quiz Game Host</span></div>
+        <div className="bau-row"><Link to="/host" className="bau-button ghost">Dashboard</Link></div>
       </nav>
 
-      <div className="container" style={{ padding: 'var(--space-xl) var(--space-md)', flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+      <main className="host-main bau-stack">
         
         {/* Top Controls */}
         <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
           <select 
             value={selectedSetId} 
             onChange={e => setSelectedSetId(e.target.value)}
-            style={inputStyle}
+            className="bau-select"
           >
             <option value="">-- Select Question Set to Edit --</option>
             {questionSets.map(s => <option key={s.id} value={s.id}>{s.name || s.title}</option>)}
           </select>
-          <button onClick={handleCreateSet} style={secondaryBtn}>+ New Set</button>
+          <button onClick={handleCreateSet} className="bau-button secondary">+ New Set</button>
           
           <div style={{ flex: 1 }}></div>
           {selectedSetId && (
             <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-              <button onClick={handleExportJSON} style={secondaryBtn}>Export JSON</button>
-              <button onClick={handleExportCSV} style={secondaryBtn}>Export CSV</button>
-              <label style={{ ...secondaryBtn, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', margin: 0 }}>
+              <button onClick={handleExportJSON} className="bau-button secondary">Export JSON</button>
+              <button onClick={handleExportCSV} className="bau-button secondary">Export CSV</button>
+              <label className="bau-button secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', margin: 0 }}>
                 Import File
                 <input 
                   type="file" 
@@ -457,7 +455,7 @@ export default function Editor() {
                   style={{ display: 'none' }} 
                 />
               </label>
-              <button onClick={handleSaveQuestions} style={primaryBtn}>Save All Changes</button>
+              <button onClick={handleSaveQuestions} className="bau-button primary">Save All Changes</button>
             </div>
           )}
         </div>
@@ -467,10 +465,10 @@ export default function Editor() {
           <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 'var(--space-xl)', flex: 1, alignItems: 'start' }}>
             
             {/* List Panel */}
-            <div className="glass-card" style={{ height: '600px', overflowY: 'auto' }}>
+            <div className="bau-card" style={{ height: '600px', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
                 <h3>Questions ({questions.length})</h3>
-                <button onClick={handleAddQuestion} style={secondaryBtn}>+ Add</button>
+                <button onClick={handleAddQuestion} className="bau-button secondary">+ Add</button>
               </div>
 
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -491,7 +489,7 @@ export default function Editor() {
 
             {/* Form Panel */}
             {activeQ ? (
-              <div className="glass-card">
+              <div className="bau-card">
                 <h3>Edit Question</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
                   
@@ -500,7 +498,7 @@ export default function Editor() {
                     <textarea 
                       value={activeQ.text} 
                       onChange={e => updateActiveQuestion({ text: e.target.value })}
-                      style={{ ...inputStyle, width: '100%', height: '80px', marginTop: '4px' }}
+                      className="bau-textarea"
                     />
                   </div>
 
@@ -510,7 +508,7 @@ export default function Editor() {
                       <select 
                         value={activeQ.type} 
                         onChange={e => handleTypeChange(e.target.value)}
-                        style={{ ...inputStyle, width: '100%', marginTop: '4px' }}
+                        className="bau-input"
                       >
                         <option value="mcq">Multiple Choice</option>
                         <option value="truefalse">True / False</option>
@@ -523,7 +521,7 @@ export default function Editor() {
                         type="number" 
                         value={activeQ.timer_seconds} 
                         onChange={e => updateActiveQuestion({ timer_seconds: parseInt(e.target.value) })}
-                        style={{ ...inputStyle, width: '100%', marginTop: '4px' }}
+                        className="bau-input"
                       />
                     </div>
                   </div>
@@ -545,7 +543,7 @@ export default function Editor() {
                               type="text" 
                               value={opt.label} 
                               onChange={e => updateOption(i, 'label', e.target.value)} 
-                              style={{ ...inputStyle, width: '60px' }} 
+                              className="bau-input" style={{ width: 72 }} 
                               placeholder="Label" 
                               disabled={activeQ.type === 'truefalse'}
                             />
@@ -553,7 +551,7 @@ export default function Editor() {
                               type="text" 
                               value={opt.text} 
                               onChange={e => updateOption(i, 'text', e.target.value)} 
-                              style={{ ...inputStyle, flex: 1 }} 
+                              className="bau-input" style={{ flex: 1 }} 
                               placeholder="Option Text" 
                               disabled={activeQ.type === 'truefalse'}
                             />
@@ -570,7 +568,7 @@ export default function Editor() {
                         type="text" 
                         value={activeQ.correct_answer} 
                         onChange={e => updateActiveQuestion({ correct_answer: e.target.value })}
-                        style={{ ...inputStyle, width: '100%', marginTop: '4px' }}
+                        className="bau-input"
                       />
                     </div>
                   )}
@@ -578,19 +576,16 @@ export default function Editor() {
                 </div>
               </div>
             ) : (
-              <div className="glass-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '600px' }}>
+              <div className="bau-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '600px' }}>
                 <p className="text-muted">Select a question to edit.</p>
               </div>
             )}
             
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
 
-const inputStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' };
-const primaryBtn: React.CSSProperties = { background: 'var(--color-primary)', color: 'white', padding: '8px 16px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
-const secondaryBtn: React.CSSProperties = { background: 'var(--bg-secondary)', color: 'white', padding: '8px 16px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' };
-const navLink: React.CSSProperties = { color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold', padding: '0 var(--space-sm)' };
+

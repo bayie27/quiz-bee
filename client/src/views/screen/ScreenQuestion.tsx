@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
@@ -6,101 +6,27 @@ export default function ScreenQuestion() {
   const { currentQuestion, revealData, isGameEnded, timer, socket } = useSocket();
   const navigate = useNavigate();
 
-
-  useEffect(() => {
-    if (revealData) navigate('/screen/reveal');
-    if (isGameEnded) navigate('/screen/podium');
-  }, [revealData, isGameEnded, navigate]);
-
+  useEffect(() => { if (revealData) navigate('/screen/reveal'); if (isGameEnded) navigate('/screen/podium'); }, [revealData, isGameEnded, navigate]);
   useEffect(() => {
     if (!socket) return;
-    const onQuestionSkipped = () => navigate('/screen/lobby'); // or just clear it? We just wait for next question.
+    const onQuestionSkipped = () => navigate('/screen/lobby');
     socket.on('question:skipped', onQuestionSkipped);
-    return () => {
-      socket.off('question:skipped', onQuestionSkipped);
-    };
+    return () => { socket.off('question:skipped', onQuestionSkipped); };
   }, [socket, navigate]);
 
-  if (!currentQuestion) return <div style={{ background: '#0f172a', height: '100vh' }}></div>;
-
+  if (!currentQuestion) return <main className="screen-shell" />;
   const { text, type, options, questionNumber, totalQuestions, image } = currentQuestion;
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: '#0f172a',
-      color: 'white',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '60px'
-    }}>
-      
-      {/* Top Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-        <div style={{ fontSize: '2rem', color: '#d946ef', fontWeight: 'bold' }}>
-          Question {questionNumber} of {totalQuestions}
-        </div>
-        <div style={{ 
-          fontSize: '4rem', 
-          fontWeight: 'bold', 
-          color: timer.remaining <= 5 ? 'var(--color-danger)' : '#8b5cf6',
-          background: 'rgba(255,255,255,0.1)',
-          padding: '10px 40px',
-          borderRadius: '20px'
-        }}>
-          {timer.remaining}
-        </div>
-      </div>
-
-      {/* Question Text */}
-      <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-        <h1 style={{ fontSize: '4.5rem', lineHeight: '1.2', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>{text}</h1>
-        {image && <img src={image} alt="Question" style={{ maxHeight: '300px', borderRadius: '16px', marginTop: '40px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} />}
-      </div>
-
-      {/* Options */}
+    <main className="screen-shell">
+      <header className="screen-header"><div><div className="screen-meta">Question {questionNumber} of {totalQuestions}</div><h1 className="screen-title">{text}</h1></div><div className={'screen-timer ' + (timer.remaining <= 5 ? 'danger' : '')}>{timer.remaining}</div></header>
+      {image && <img src={image} alt="Question" className="bau-card" style={{ maxHeight: 280, objectFit: 'contain', alignSelf: 'center' }} />}
       {(type === 'mcq' || type === 'truefalse') && (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: '30px', 
-          flex: 1, 
-          alignContent: 'center',
-          maxWidth: '1200px',
-          margin: '0 auto',
-          width: '100%'
-        }}>
-          {options.map((opt: any, i: number) => (
-            <div key={i} className="glass-card" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '30px', 
-              padding: '40px',
-              borderLeft: `8px solid ${['#ef4444', '#3b82f6', '#eab308', '#22c55e'][i % 4]}`
-            }}>
-              <div style={{ 
-                width: '80px', height: '80px', 
-                background: 'rgba(255,255,255,0.1)', 
-                borderRadius: '50%', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                fontSize: '2.5rem', fontWeight: 'bold' 
-              }}>
-                {opt.label}
-              </div>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{opt.text}</div>
-            </div>
-          ))}
-        </div>
+        <section className="screen-option-grid">
+          {options.map((opt: any, i: number) => <div key={i} className="bau-card screen-option"><span className="answer-label" style={{ minWidth: 72, height: 72, fontSize: '2rem' }}>{opt.label}</span><span>{opt.text}</span></div>)}
+        </section>
       )}
-
-      {type === 'identification' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="glass-card" style={{ padding: '60px', textAlign: 'center', width: '100%', maxWidth: '800px' }}>
-            <h2 style={{ fontSize: '3rem', color: 'var(--text-muted)' }}>Type your answer...</h2>
-          </div>
-        </div>
-      )}
-
-    </div>
+      {type === 'identification' && <section className="bau-card yellow text-center" style={{ margin: 'auto', width: 'min(900px, 100%)' }}><h2 className="bau-title-lg">Type Your Answer</h2></section>}
+    </main>
   );
 }
