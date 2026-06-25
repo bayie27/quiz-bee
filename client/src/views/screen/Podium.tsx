@@ -33,7 +33,13 @@ export default function Podium() {
 
   return (
     <main className="screen-shell">
-      <header className="screen-header"><h1 className="screen-title">Final Results</h1><div className="screen-meta">JPCS Quiz Game</div></header>
+      <header className="screen-header">
+        <h1 className="screen-title">Final Results</h1>
+        <div className="brand-lockup screen-brand">
+          <span className="brand-mark" aria-hidden="true"><span className="brand-dot" /><span className="brand-square" /><span className="brand-triangle" /></span>
+          <span>JPCS Quiz Game</span>
+        </div>
+      </header>
       <AnimatePresence>
         {step >= 1 && runnersUp.length > 0 && <motion.section initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="bau-row" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>{runnersUp.map((p: any) => <div key={p.rank} className="bau-card compact"><strong>#{p.rank}</strong> <AvatarBadge avatar={p.avatar} size={28} /> {p.name} <strong>{p.score}</strong></div>)}</motion.section>}
       </AnimatePresence>

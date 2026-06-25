@@ -34,7 +34,7 @@ export default function End() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (err) {
       console.error('Failed to generate result card', err);
       setDownloadError('Failed to generate image. Please try again.');
@@ -61,8 +61,14 @@ export default function End() {
             <div><h2 className="bau-title-md">{resultCard.name}</h2><p>{resultCard.section}</p></div>
           </div>
           <div className="bau-grid two">
-            <div className="stat-block" style={{ background: '#fff' }}><div className="bau-meta">Rank</div><strong>#{resultCard.rank}</strong></div>
-            <div className="stat-block" style={{ background: '#fff' }}><div className="bau-meta">Score</div><strong>{resultCard.score}</strong></div>
+            <div className="stat-block" style={{ background: '#fff', color: '#121212' }}>
+              <div className="bau-meta">Final Rank</div>
+              <strong className="stat-value" style={{ fontSize: '2rem' }}>#{resultCard.rank ?? '-'}</strong>
+            </div>
+            <div className="stat-block" style={{ background: '#fff', color: '#121212' }}>
+              <div className="bau-meta">Final Score</div>
+              <strong className="stat-value" style={{ fontSize: '2rem' }}>{resultCard.score ?? 0}</strong>
+            </div>
           </div>
           <div className="bau-card yellow compact no-shadow"><strong>Best Streak: {resultCard.bestStreak}</strong></div>
         </section>

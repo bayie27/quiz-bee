@@ -184,7 +184,13 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
     newSocket.on('game:ended', () => {
       setIsGameEnded(true);
       setGameCountdown(null);
+      setHostPreview(null);
       setHostCurrentQuestion(null);
+      setCurrentQuestion(null);
+      setSkippedQuestion(null);
+      setRevealData(null);
+      setTimer({ remaining: 0, paused: false });
+      setHostAnswerCount({ answered: 0, total: 0, percentage: 0 });
       setHostState((prev: any) => prev ? { ...prev, status: 'ended' } : null);
     });
 

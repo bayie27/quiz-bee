@@ -110,7 +110,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {timer.remaining === 0 && !gameEnded && !hasMoreQuestions && (
+              {timer.remaining === 0 && !gameCountdown && !gameEnded && !hasMoreQuestions && (
                 <div className="bau-row" style={{ flexWrap: 'wrap' }}>
                   <button className="bau-button secondary" onClick={() => socket?.emit('host:show_leaderboard')}>Leaderboard</button>
                   <button className="bau-button danger" onClick={() => socket?.emit('host:end_game')}>End Game</button>

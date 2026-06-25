@@ -37,6 +37,17 @@ function BrandMark() {
   );
 }
 
+function SoundToggleIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" strokeLinejoin="miter">
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+      {!muted && <path d="M16 8c1.2 1.2 1.8 2.5 1.8 4s-.6 2.8-1.8 4" />}
+      {!muted && <path d="M19 5c2 2 3 4.3 3 7s-1 5-3 7" />}
+      {muted && <path d="M17 9l5 5M22 9l-5 5" />}
+    </svg>
+  );
+}
+
 function MobileLayout({ children }: MobileLayoutProps) {
   const { isMuted, setIsMuted } = useSocket();
 
@@ -48,7 +59,7 @@ function MobileLayout({ children }: MobileLayoutProps) {
           <span>JPCS Quiz Game</span>
         </div>
         <button className="bau-icon-button" onClick={() => setIsMuted(!isMuted)} aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'} type="button">
-          {isMuted ? 'Muted' : 'Sound'}
+          <SoundToggleIcon muted={isMuted} />
         </button>
       </header>
       {children}
