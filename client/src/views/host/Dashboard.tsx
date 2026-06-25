@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import { apiPath } from '../../config/api';
 
@@ -13,10 +13,7 @@ export default function Dashboard() {
     if (!isHostAuthenticated) {
       navigate('/host/login');
     } else {
-      fetch(apiPath('/api/question-sets'))
-        .then(res => res.json())
-        .then(data => setQuestionSets(Array.isArray(data) ? data : []))
-        .catch(err => console.error(err));
+      fetch(apiPath('/api/question-sets')).then(res => res.json()).then(data => setQuestionSets(Array.isArray(data) ? data : [])).catch(console.error);
     }
   }, [isHostAuthenticated, navigate]);
 
@@ -24,149 +21,87 @@ export default function Dashboard() {
 
   const handleStartGame = () => {
     if (!selectedSet) return alert('Select a question set');
-    if (socket) socket.emit('host:start_game', { questionSetId: selectedSet });
+    socket?.emit('host:start_game', { questionSetId: selectedSet });
   };
-
-  const handleLaunch = () => socket?.emit('host:launch_question');
-  const handlePause = () => socket?.emit('host:pause_timer');
-  const handleResume = () => socket?.emit('host:resume_timer');
-  const handleReveal = () => socket?.emit('host:reveal_answer');
-  const handleSkip = () => socket?.emit('host:skip_question');
-  const handleLeaderboard = () => socket?.emit('host:show_leaderboard');
-  const handleEndGame = () => socket?.emit('host:end_game');
-  const handleReset = () => socket?.emit('host:reset_room');
 
   const isActiveGame = hostState?.status === 'active';
   const gameEnded = isGameEnded || hostState?.status === 'ended';
   const showGameControls = isActiveGame || gameEnded;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column' }}>
-      {/* Navbar */}
-      <nav style={{ background: 'var(--bg-secondary)', padding: 'var(--space-md) var(--space-xl)', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <h2>JPCS Quiz Game Host</h2>
-        <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-          <Link to="/host/editor" style={navLink}>Editor</Link>
-        </div>
+    <div className="host-shell">
+      <nav className="host-nav">
+        <div className="brand-lockup"><span className="brand-mark" aria-hidden="true"><span className="brand-dot" /><span className="brand-square" /><span className="brand-triangle" /></span><span>JPCS Quiz Game Host</span></div>
+        <div className="bau-row"><Link className="bau-button ghost" to="/host/editor">Editor</Link></div>
       </nav>
 
-      <div className="container" style={{ padding: 'var(--space-xl) var(--space-md)', flex: 1 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 'var(--space-xl)' }}>
-          
-          {/* Main Panel */}
-          <div>
-            {!showGameControls ? (
-              <div className="glass-card">
-                <h2>Start New Game</h2>
-                <div style={{ marginTop: 'var(--space-md)', display: 'flex', gap: 'var(--space-md)' }}>
-                  <select 
-                    value={selectedSet} 
-                    onChange={e => setSelectedSet(e.target.value)}
-                    style={{ flex: 1, padding: 'var(--space-sm)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-primary)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
-                  >
-                    <option value="">-- Select Question Set --</option>
-                    {questionSets.map(s => <option key={s.id} value={s.id}>{s.name || s.title}</option>)}
-                  </select>
-                  <button onClick={handleStartGame} style={primaryBtn} disabled={!selectedSet}>Start Game</button>
-                </div>
+      <main className="host-main host-grid">
+        <section className="bau-stack">
+          {!showGameControls ? (
+            <div className="bau-card bau-stack">
+              <h1 className="bau-title-md">Start Game</h1>
+              <div className="bau-row" style={{ alignItems: 'stretch' }}>
+                <select className="bau-select" value={selectedSet} onChange={(e) => setSelectedSet(e.target.value)}>
+                  <option value="">Select question set</option>
+                  {questionSets.map(s => <option key={s.id} value={s.id}>{s.name || s.title}</option>)}
+                </select>
+                <button className="bau-button primary" onClick={handleStartGame} disabled={!selectedSet}>Start</button>
               </div>
-            ) : (
-              <div className="glass-card">
-                <h2>Game Controls</h2>
-                {hostPreview ? (
-                  <div style={{ marginTop: 'var(--space-md)', padding: 'var(--space-md)', background: 'rgba(0,0,0,0.3)', borderRadius: 'var(--radius-md)' }}>
-                    <div className="text-muted">Up Next: Q{hostPreview.questionNumber} / {hostPreview.totalQuestions}</div>
-                    <h3 style={{ margin: 'var(--space-sm) 0' }}>{hostPreview.question}</h3>
-                    <div className="text-success" style={{ fontWeight: 'bold' }}>Answer: {hostPreview.answer}</div>
-                    
-                    <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-lg)' }}>
-                      <button onClick={handleLaunch} style={primaryBtn}>Launch Question</button>
-                      <button onClick={handleSkip} style={dangerBtn}>Skip</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ marginTop: 'var(--space-md)' }}>
-                    {gameEnded ? (
-                      <div>
-                        <h3>Game Ended</h3>
-                        <button onClick={handleReset} style={primaryBtn}>Reset Room</button>
-                      </div>
-                    ) : (
-                      <div className="text-muted">Waiting for next phase...</div>
-                    )}
-                  </div>
-                )}
-
-                {/* Active Question Panel */}
-                {timer.remaining > 0 && !hostPreview && (
-                  <div style={{ marginTop: 'var(--space-xl)', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 'var(--space-xl)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h3>Live Question</h3>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: timer.remaining <= 5 ? 'var(--color-danger)' : 'white' }}>{timer.remaining}s</div>
-                    </div>
-                    
-                    <div style={{ marginTop: 'var(--space-md)', display: 'flex', gap: 'var(--space-sm)' }}>
-                      {timer.paused ? 
-                        <button onClick={handleResume} style={primaryBtn}>Resume Timer</button> :
-                        <button onClick={handlePause} style={secondaryBtn}>Pause Timer</button>
-                      }
-                      <button onClick={handleReveal} style={primaryBtn}>Reveal Answer</button>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Reveal & Leaderboard Controls */}
-                {timer.remaining === 0 && !hostPreview && !gameEnded && (
-                  <div style={{ marginTop: 'var(--space-xl)', display: 'flex', gap: 'var(--space-md)' }}>
-                    <button onClick={handleReveal} style={primaryBtn}>Reveal Answer</button>
-                    <button onClick={handleLeaderboard} style={secondaryBtn}>Show Leaderboard</button>
-                    <button onClick={handleEndGame} style={dangerBtn}>End Game</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div>
-            <div className="glass-card text-center">
-              <div className="text-muted">Room PIN</div>
-              <h1 className="text-primary" style={{ letterSpacing: '4px', fontSize: '3rem' }}>{hostState?.roomPin || '------'}</h1>
             </div>
+          ) : (
+            <div className="bau-card bau-stack">
+              <h1 className="bau-title-md">Game Controls</h1>
+              {hostPreview ? (
+                <div className="bau-card yellow compact no-shadow bau-stack">
+                  <div className="bau-kicker">Up next: Q{hostPreview.questionNumber} / {hostPreview.totalQuestions}</div>
+                  <h2 className="bau-title-md">{hostPreview.question}</h2>
+                  <p><strong>Answer:</strong> {hostPreview.answer}</p>
+                  <div className="bau-row">
+                    <button className="bau-button primary" onClick={() => socket?.emit('host:launch_question')}>Launch Question</button>
+                    <button className="bau-button danger" onClick={() => socket?.emit('host:skip_question')}>Skip</button>
+                  </div>
+                </div>
+              ) : gameEnded ? (
+                <div className="bau-stack"><h2 className="bau-title-md">Game Ended</h2><button className="bau-button primary" onClick={() => socket?.emit('host:reset_room')}>Reset Room</button></div>
+              ) : (
+                <p className="text-muted">Waiting for next phase.</p>
+              )}
 
-            <div className="glass-card" style={{ marginTop: 'var(--space-md)' }}>
-              <h3>Live Status</h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-sm)' }}>
-                <span>Participants</span>
-                <span style={{ fontWeight: 'bold' }}>{hostState?.participantCount || 0}</span>
-              </div>
-              
-              {isActiveGame && (
-                <div style={{ marginTop: 'var(--space-lg)' }}>
-                  <h4>All Answers In</h4>
-                  <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-full)', height: '24px', marginTop: '8px', overflow: 'hidden', position: 'relative' }}>
-                    <div style={{ 
-                      width: `${hostAnswerCount.percentage || 0}%`, 
-                      background: 'var(--color-success)', 
-                      height: '100%',
-                      transition: 'width 0.3s ease'
-                    }}></div>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
-                      {hostAnswerCount.answered} / {hostAnswerCount.total} ({hostAnswerCount.percentage || 0}%)
-                    </div>
+              {timer.remaining > 0 && !hostPreview && (
+                <div className="bau-card compact no-shadow bau-stack">
+                  <div className="bau-row between"><h2 className="bau-title-md">Live Question</h2><strong className="screen-timer" style={{ minWidth: 96, fontSize: '2.4rem', padding: 8 }}>{timer.remaining}</strong></div>
+                  <div className="bau-row">
+                    {timer.paused ? <button className="bau-button secondary" onClick={() => socket?.emit('host:resume_timer')}>Resume</button> : <button className="bau-button yellow" onClick={() => socket?.emit('host:pause_timer')}>Pause</button>}
+                    <button className="bau-button primary" onClick={() => socket?.emit('host:reveal_answer')}>Reveal</button>
                   </div>
                 </div>
               )}
+
+              {timer.remaining === 0 && !hostPreview && !gameEnded && (
+                <div className="bau-row" style={{ flexWrap: 'wrap' }}>
+                  <button className="bau-button primary" onClick={() => socket?.emit('host:reveal_answer')}>Reveal</button>
+                  <button className="bau-button secondary" onClick={() => socket?.emit('host:show_leaderboard')}>Leaderboard</button>
+                  <button className="bau-button danger" onClick={() => socket?.emit('host:end_game')}>End Game</button>
+                </div>
+              )}
             </div>
+          )}
+        </section>
+
+        <aside className="bau-stack">
+          <div className="bau-card yellow text-center"><div className="bau-kicker">Room PIN</div><div className="stat-value">{hostState?.roomPin || '------'}</div></div>
+          <div className="bau-card bau-stack">
+            <h2 className="bau-title-md">Live Status</h2>
+            <div className="bau-row between"><span>Participants</span><strong>{hostState?.participantCount || 0}</strong></div>
+            {isActiveGame && (
+              <div className="bau-stack">
+                <div className="bau-row between"><span>Answers</span><strong>{hostAnswerCount.answered} / {hostAnswerCount.total}</strong></div>
+                <div className="progress-track"><div className="progress-fill" style={{ width: (hostAnswerCount.percentage || 0) + '%' }} /><div className="progress-label">{hostAnswerCount.percentage || 0}%</div></div>
+              </div>
+            )}
           </div>
-          
-        </div>
-      </div>
+        </aside>
+      </main>
     </div>
   );
 }
-
-const navLink: React.CSSProperties = { color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 'bold', padding: '0 var(--space-sm)' };
-const primaryBtn: React.CSSProperties = { background: 'var(--color-primary)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
-const secondaryBtn: React.CSSProperties = { background: 'var(--bg-secondary)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontWeight: 'bold' };
-const dangerBtn: React.CSSProperties = { background: 'var(--color-danger)', color: 'white', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
