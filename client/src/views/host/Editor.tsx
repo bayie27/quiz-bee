@@ -62,6 +62,8 @@ export default function Editor() {
   const [selectedSetId, setSelectedSetId] = useState('');
   const [questions, setQuestions] = useState<any[]>([]);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
+  const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
+  const [jsonImportText, setJsonImportText] = useState('');
 
   useEffect(() => {
     if (!isHostAuthenticated) {
@@ -323,7 +325,14 @@ export default function Editor() {
     return result;
   };
 
-  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const importQuestions = (importedQuestions: any[]) => {
+    const validated = importedQuestions.map((q, index) => validateImportedQuestion(q, index + 1));
+    setQuestions([...questions, ...validated]);
+    if (validated.length > 0) setActiveQuestionId(validated[0]._dndId);
+    alert(`Successfully imported ${validated.length} questions! Click "Save All Changes" to persist.`);
+  };
+
+  const handleCsvFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -331,29 +340,27 @@ export default function Editor() {
     reader.onload = (event) => {
       const content = event.target?.result as string;
       try {
-        let importedQuestions: any[] = [];
-        if (file.name.endsWith('.json')) {
-          const parsed = JSON.parse(content);
-          if (!Array.isArray(parsed)) throw new Error('Root must be a JSON array of questions');
-          importedQuestions = parsed;
-        } else if (file.name.endsWith('.csv')) {
-          importedQuestions = parseCsvQuestions(content);
-        } else {
-          throw new Error('Unsupported file format. Please upload a .json or .csv file');
-        }
-
-        const validated = importedQuestions.map((q, index) => validateImportedQuestion(q, index + 1));
-        setQuestions([...questions, ...validated]);
-        if (validated.length > 0) setActiveQuestionId(validated[0]._dndId);
-        alert(`Successfully imported ${validated.length} questions! Click "Save All Changes" to persist.`);
+        if (!file.name.endsWith('.csv')) throw new Error('Unsupported file format. Please upload a .csv file');
+        importQuestions(parseCsvQuestions(content));
       } catch (err: any) {
-        alert(`Import Failed: ${err.message}`);
+        alert(`CSV Import Failed: ${err.message}`);
       }
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
+  const handleJsonPasteImport = () => {
+    try {
+      const parsed = JSON.parse(jsonImportText);
+      if (!Array.isArray(parsed)) throw new Error('Root must be a JSON array of questions');
+      importQuestions(parsed);
+      setJsonImportText('');
+      setIsJsonImportOpen(false);
+    } catch (err: any) {
+      alert(`JSON Import Failed: ${err.message}`);
+    }
+  };
   const parseCsvQuestions = (content: string) => {
     const lines = content.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     if (lines.length <= 1) throw new Error('CSV is empty or missing headers');
@@ -440,11 +447,35 @@ export default function Editor() {
               <button onClick={handleExportJSON} className="bau-button secondary" type="button">Export JSON</button>
               <button onClick={handleExportCSV} className="bau-button secondary" type="button">Export CSV</button>
               <label className="bau-button secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', margin: 0 }}>
-                Import CSV or JSON
-                <input type="file" accept=".json,.csv" onChange={handleFileImport} style={{ display: 'none' }} />
+                Import CSV File
+                <input type="file" accept=".csv" onChange={handleCsvFileImport} style={{ display: 'none' }} />
               </label>
+              <button onClick={() => setIsJsonImportOpen(true)} className="bau-button secondary" type="button">Paste JSON</button>
               <button onClick={handleSaveQuestions} className="bau-button primary" type="button">Save All Changes</button>
             </div>
+
+            {isJsonImportOpen && (
+              <section className="bau-card compact bau-stack">
+                <div className="bau-row between">
+                  <div>
+                    <h2 className="bau-title-md">Paste JSON Questions</h2>
+                    <p className="bau-meta">Paste a JSON array of question objects, then import it into this set.</p>
+                  </div>
+                  <button className="bau-button ghost" type="button" onClick={() => setIsJsonImportOpen(false)}>Close</button>
+                </div>
+                <textarea
+                  className="bau-textarea"
+                  style={{ minHeight: 220, fontFamily: 'monospace' }}
+                  value={jsonImportText}
+                  onChange={(e) => setJsonImportText(e.target.value)}
+                  placeholder='[{"text":"What does HTML stand for?","type":"mcq","timer_seconds":30,"correct_answer":"A","options":[{"label":"A","text":"HyperText Markup Language"}]}]'
+                />
+                <div className="bau-row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  <button className="bau-button ghost" type="button" onClick={() => { setJsonImportText(''); setIsJsonImportOpen(false); }}>Cancel</button>
+                  <button className="bau-button primary" type="button" onClick={handleJsonPasteImport} disabled={!jsonImportText.trim()}>Import JSON</button>
+                </div>
+              </section>
+            )}
 
             <div className="editor-grid" style={{ flex: 1 }}>
               <div className="bau-card question-list">
