@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
+import AvatarBadge from '../../components/AvatarBadge';
 
 export default function ScreenLobby() {
   const { isScreenRegistered, lobbyData, socket } = useSocket();
@@ -15,7 +16,7 @@ export default function ScreenLobby() {
     return () => { socket.off('game:started', onGameStarted); };
   }, [socket, navigate]);
 
-  const joinUrl = window.location.protocol + '//' + window.location.host + '/join';
+  const joinUrl = (import.meta.env.VITE_PUBLIC_JOIN_URL as string) || 'https://quizbee-frontend-soky.onrender.com/join';
   if (!isScreenRegistered) return <div className="screen-shell"><div className="bau-card">Connecting screen...</div></div>;
 
   return (

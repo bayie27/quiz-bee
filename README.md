@@ -1,4 +1,4 @@
-# JPCS Quiz Game (Quiz Bee) 🐝
+# JPCS Quiz Game (Quiz Bee)
 
 [![React 19](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react)](https://react.dev)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
@@ -15,14 +15,14 @@ JPCS Quiz Game (Quiz Bee) is a real-time, Kahoot-style multiplayer quiz platform
 
 ### 💻 Three Interactive Roles
 *   **Host Dashboard**: Authenticate via Host PIN, create/edit question sets with a drag-and-drop editor, control the game flow (pause/resume/skip), kick players in real-time, and reveal live results.
-*   **Participant Mobile UI**: A responsive, mobile-first controller optimized for 375px–430px screens. Features a grid-based emoji avatar picker, interactive HSL color accents, streak tracking, lock-in confirmation animations, and personal scorecards.
+*   **Participant Mobile UI**: A responsive, mobile-first controller optimized for 375px-430px screens. Features Bauhaus geometric avatar badges, lock-in feedback, streak tracking, and personal result cards.
 *   **Big Screen Display**: Designed for projection in halls or classrooms. Displays the animated player lobby, live question timers, responsive answer distribution charts, and a dynamic 3D-style podium for the winners.
 
 ### ⚡ Technical Capabilities
 *   **Participant Reconnection & Grace Period (FR-11 / FR-12)**: Native `localStorage` session persistence. If a player disconnects, they can rejoin within a 10-second grace period without losing their score, active streak, or state.
 *   **Programmatic Audio Engine (FR-74 - FR-77)**: Implements Web Audio API to dynamically synthesize countdown ticks, correct-answer chimes, and incorrect-answer buzzes directly in the browser—meaning zero large audio file downloads. Includes a global mute/unmute toggle.
-*   **Robust Excel, CSV, & JSON Import/Export (FR-21 / FR-22)**: Visual spreadsheet import engine featuring strict RFC 4180-compliant CSV and JSON validation schemas. Warns hosts about type mismatches, missing headers, or malformed rows.
-*   **Sleek Glassmorphic Design**: Modern HSL-tailored dark modes, glowing neon borders, backdrop filters, and fluid spring animations powered by Framer Motion.
+*   **CSV & JSON Import/Export (FR-21 / FR-22)**: Hosts can import and export question sets with documented CSV headers, JSON arrays, and validation for malformed rows.
+*   **Bauhaus Design System**: Fixed JPCS Quiz Game identity with strong geometry, thick borders, hard shadows, and high-contrast colors.
 *   **Scale-Tested (NFR-02)**: Performance optimized to handle **1,000 concurrent players** with a $p95$ network round-trip response latency of **under 5ms** (exceeding the 500ms target).
 
 ---
@@ -113,7 +113,38 @@ cd quiz-bee
 
 ---
 
-## 🧪 Verification & Testing
+## Question Import Format
+
+The host editor accepts CSV and JSON imports from the **Import CSV or JSON** control.
+
+### CSV Headers
+Use this exact header row:
+
+```csv
+text,type,timer_seconds,correct_answer,option_a,option_b,option_c,option_d,option_e,option_f
+```
+
+Valid `type` values are `mcq`, `truefalse`, and `identification`.
+
+- MCQ questions support 2-6 options. Use labels `A` through `F` as the `correct_answer`.
+- True/False questions use `A=True` and `B=False`. The `correct_answer` must be `A` or `B`.
+- Identification questions ignore option columns and use `correct_answer` as the exact accepted text.
+
+### CSV Examples
+
+```csv
+text,type,timer_seconds,correct_answer,option_a,option_b,option_c,option_d,option_e,option_f
+"What does CPU stand for?",mcq,30,A,"Central Processing Unit","Central Program Unit","Computer Personal Unit","Central Power Unit",,
+"JavaScript is a compiled language.",truefalse,15,B,,,,,,
+"What markup language is used for web pages?",identification,20,HTML,,,,,,
+```
+
+### JSON Format
+JSON imports must be an array of question objects using the same core fields: `text`, `type`, `timer_seconds`, `correct_answer`, and optional `options` for MCQ and True/False questions.
+
+---
+
+## Verification & Testing
 
 ### Typechecking (Frontend)
 Run static TypeScript analysis:

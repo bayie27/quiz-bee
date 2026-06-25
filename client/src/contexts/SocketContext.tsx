@@ -19,6 +19,11 @@ export interface HostAnswerCount {
   percentage: number;
 }
 
+export interface GameCountdown {
+  remaining: number;
+  totalSeconds: number;
+}
+
 export interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
@@ -36,6 +41,9 @@ export interface SocketContextType {
   setHostState: React.Dispatch<React.SetStateAction<any>>;
   hostAnswerCount: HostAnswerCount;
   hostPreview: any;
+  hostCurrentQuestion: any;
+  gameCountdown: GameCountdown | null;
+  hostError: string;
   isScreenRegistered: boolean;
   registerScreen: () => void;
   podiumData: any;
@@ -78,6 +86,9 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
   const [hostState, setHostState] = useState<any>(null);
   const [hostAnswerCount, setHostAnswerCount] = useState<HostAnswerCount>({ answered: 0, total: 0, percentage: 0 });
   const [hostPreview, setHostPreview] = useState<any>(null);
+  const [hostCurrentQuestion, setHostCurrentQuestion] = useState<any>(null);
+  const [gameCountdown, setGameCountdown] = useState<GameCountdown | null>(null);
+  const [hostError, setHostError] = useState('');
 
   // Screen State
   const [isScreenRegistered, setIsScreenRegistered] = useState(false);
@@ -96,7 +107,11 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
 
     // Global listeners relevant to participants and host room status
     newSocket.on('lobby:update', (data: any) => {
-      setLobbyData(data);
+      setLobbyData((prev) => ({
+        participants: data.participants || [],
+        count: data.count || 0,
+        roomPin: data.roomPin || prev.roomPin
+      }));
       setHostState((prev: any) => prev ? {
         ...prev,
         participantCount: data.count,
@@ -123,11 +138,19 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       setLeaderboardData(null);
       setTimer({ remaining: q.timer, paused: false });
       setHostPreview(null);
+      setGameCountdown(null);
       setIsGameEnded(false);
     });
 
     newSocket.on('question:closed', () => {
       setTimer(prev => ({ ...prev, remaining: 0 }));
+    });
+
+    newSocket.on('question:skipped', () => {
+      setCurrentQuestion(null);
+      setRevealData(null);
+      setTimer({ remaining: 0, paused: false });
+      setHostCurrentQuestion(null);
     });
 
     newSocket.on('score:update', (data: any) => {
@@ -150,8 +173,14 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       } : null);
     });
 
+    newSocket.on('game:countdown', (data: GameCountdown) => {
+      setGameCountdown(data.remaining > 0 ? data : null);
+    });
+
     newSocket.on('game:ended', () => {
       setIsGameEnded(true);
+      setGameCountdown(null);
+      setHostCurrentQuestion(null);
       setHostState((prev: any) => prev ? { ...prev, status: 'ended' } : null);
     });
 
@@ -169,8 +198,17 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       setHostAnswerCount(data);
     });
 
+    newSocket.on('host:current_question', (data: any) => {
+      setHostCurrentQuestion(data);
+    });
+
+    newSocket.on('host:error', ({ reason }: { reason: string }) => {
+      setHostError(reason);
+    });
+
     newSocket.on('question:preview', (preview: any) => {
       setHostPreview(preview);
+      if (preview) setHostCurrentQuestion(null);
     });
 
     newSocket.on('host:room_reset', (data: any) => {
@@ -185,6 +223,9 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
         roomPin: data.roomPin
       });
       setHostPreview(null);
+      setHostCurrentQuestion(null);
+      setGameCountdown(null);
+      setHostError('');
       setHostAnswerCount({ answered: 0, total: 0, percentage: 0 });
       setTimer({ remaining: 0, paused: false });
       setCurrentQuestion(null);
@@ -252,6 +293,9 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       setRevealData(null);
       setResultCard(null);
       setHostPreview(null);
+      setHostCurrentQuestion(null);
+      setGameCountdown(null);
+      setHostError('');
       setHostAnswerCount({ answered: 0, total: 0, percentage: 0 });
       setPodiumData(null);
       setLeaderboardData(null);
@@ -294,6 +338,9 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       setHostState,
       hostAnswerCount,
       hostPreview,
+      hostCurrentQuestion,
+      gameCountdown,
+      hostError,
       isScreenRegistered,
       registerScreen,
       podiumData,

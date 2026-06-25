@@ -44,3 +44,5 @@ services:
           name: quizbee-backend
           type: web
           property: host
+      - key: VITE_PUBLIC_JOIN_URL
+        value: "https://quizbee-frontend-soky.onrender.com/join"

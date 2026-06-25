@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import AvatarBadge from '../../components/AvatarBadge';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -28,13 +29,13 @@ export default function Podium() {
   const third = podiumData.find((p: any) => p.rank === 3);
   const runnersUp = podiumData.filter((p: any) => p.rank > 3).sort((a: any, b: any) => a.rank - b.rank);
 
-  const Player = ({ player }: { player: any }) => player ? <div className="bau-card compact text-center no-shadow"><div style={{ fontSize: '3rem' }}>{player.avatar || '😎'}</div><h2 className="bau-title-md">{player.name}</h2><p className="screen-meta">{player.score} pts</p></div> : null;
+  const Player = ({ player }: { player: any }) => player ? <div className="bau-card compact text-center no-shadow"><AvatarBadge avatar={player.avatar} size={72} /><h2 className="bau-title-md">{player.name}</h2><p className="screen-meta">{player.score} pts</p></div> : null;
 
   return (
     <main className="screen-shell">
       <header className="screen-header"><h1 className="screen-title">Final Results</h1><div className="screen-meta">JPCS Quiz Game</div></header>
       <AnimatePresence>
-        {step >= 1 && runnersUp.length > 0 && <motion.section initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="bau-row" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>{runnersUp.map((p: any) => <div key={p.rank} className="bau-card compact"><strong>#{p.rank}</strong> {p.avatar || '😎'} {p.name} <strong>{p.score}</strong></div>)}</motion.section>}
+        {step >= 1 && runnersUp.length > 0 && <motion.section initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="bau-row" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>{runnersUp.map((p: any) => <div key={p.rank} className="bau-card compact"><strong>#{p.rank}</strong> <AvatarBadge avatar={p.avatar} size={28} /> {p.name} <strong>{p.score}</strong></div>)}</motion.section>}
       </AnimatePresence>
       <section className="podium">
         <motion.div className="podium-place podium-second" initial={{ opacity: 0, y: 80 }} animate={{ opacity: step >= 3 ? 1 : 0, y: step >= 3 ? 0 : 80 }}><Player player={second} /><div className="podium-block">2</div></motion.div>

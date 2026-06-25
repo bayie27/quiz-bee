@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import html2canvas from 'html2canvas';
+import AvatarBadge from '../../components/AvatarBadge';
 
 export default function End() {
   const { resultCard, socket } = useSocket();
@@ -47,7 +48,7 @@ export default function End() {
             <span>JPCS Quiz Game</span>
           </div>
           <div className="bau-stack" style={{ alignItems: 'center' }}>
-            <div className="bau-card yellow compact no-shadow" style={{ width: 112, height: 112, display: 'grid', placeItems: 'center', fontSize: '3.4rem', borderRadius: '50%' }}>{resultCard.avatar || '😎'}</div>
+            <div className="result-avatar-frame"><AvatarBadge avatar={resultCard.avatar} size={76} /></div>
             <div><h2 className="bau-title-md">{resultCard.name}</h2><p>{resultCard.section}</p></div>
           </div>
           <div className="bau-grid two">
