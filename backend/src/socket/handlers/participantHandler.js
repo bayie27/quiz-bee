@@ -1,5 +1,6 @@
 const gameState = require('../../services/gameStateManager');
 const { scheduleLobbyUpdate } = require('../lobbyBroadcaster');
+const { scheduleAnswerCount, flushAnswerCount } = require('../answerCountBroadcaster');
 
 /**
  * Participant Socket.io Event Handlers — Phase 3: Core Game Loop
@@ -148,23 +149,23 @@ module.exports = (io, socket) => {
     });
 
     // ── FR-69: Update host with live answer count ──
+    scheduleAnswerCount(io);
     const answerStatus = gameState.getAnswerStatus();
-    io.to('host').emit('host:answer_count', answerStatus);
 
-    // Log the submission
-    const participant = gameState.participants.get(socket.id);
-    console.log(
-      `[ANSWER] ${participant?.name || 'unknown'} → Q${questionId} | ` +
-      `${result.result.isCorrect ? '✓ CORRECT' : '✗ WRONG'} | ` +
-      `+${result.result.pointsEarned} pts | ` +
-      `Total: ${result.result.totalScore} | ` +
-      `Streak: ${result.result.streak} | ` +
-      `Rank: #${result.result.rank} | ` +
-      `Progress: ${answerStatus.answered}/${answerStatus.total} (${answerStatus.percentage}%)`
-    );
+    if (process.env.LOG_ANSWERS === 'true') {
+      const participant = gameState.participants.get(socket.id);
+      console.log(
+        `[ANSWER] ${participant?.name || 'unknown'} -> Q${questionId} | ` +
+        `${result.result.isCorrect ? 'CORRECT' : 'WRONG'} | ` +
+        `+${result.result.pointsEarned} pts | ` +
+        `Total: ${result.result.totalScore} | ` +
+        `Streak: ${result.result.streak} | ` +
+        `Progress: ${answerStatus.answered}/${answerStatus.total} (${answerStatus.percentage}%)`
+      );
+    }
 
-    // ── If all participants have answered, notify host ──
     if (gameState.allAnswersIn()) {
+      flushAnswerCount(io);
       io.to('host').emit('all_answers_in', {
         questionId,
         ...answerStatus

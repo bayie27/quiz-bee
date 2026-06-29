@@ -1,6 +1,7 @@
 const gameState = require('../../services/gameStateManager');
 const supabase = require('../../config/supabase');
 const { flushLobbyUpdate } = require('../lobbyBroadcaster');
+const { flushAnswerCount } = require('../answerCountBroadcaster');
 
 const FIRST_QUESTION_COUNTDOWN_SECONDS = 5;
 
@@ -230,12 +231,12 @@ module.exports = (io, socket) => {
     });
 
     io.to('host').emit('host:current_question', gameState.getCurrentQuestionPreview());
-    io.to('host').emit('host:answer_count', gameState.getAnswerStatus());
+    flushAnswerCount(io);
 
     gameState.startTimer(
       ({ remaining }) => {
         io.to('game').to('host').to('screen').emit('timer:tick', { remaining });
-        io.to('host').emit('host:answer_count', gameState.getAnswerStatus());
+        flushAnswerCount(io);
       },
       () => {
         const answerStatus = gameState.getAnswerStatus();
@@ -310,7 +311,8 @@ module.exports = (io, socket) => {
     const fullLeaderboard = gameState.getLeaderboard(gameState.participants.size);
 
     io.to('screen').emit('podium:play', { top5: podium });
-    io.to('game').to('host').to('screen').emit('game:ended', {
+    io.to('game').emit('game:ended', {});
+    io.to('host').to('screen').emit('game:ended', {
       finalLeaderboard: fullLeaderboard
     });
 
