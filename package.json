@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "loadtest:participants": "node loadtest/participants.js"
+    "loadtest:participants": "node tests/load-testing/participants.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0"

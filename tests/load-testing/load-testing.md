@@ -35,13 +35,13 @@ If Supabase `room_settings` is configured, make sure `max_participants` is at le
 In another terminal:
 
 ```bash
-node loadtest/participants.js --users 2000 --url http://localhost:3001 --pin 000000 --hold-seconds 180
+node tests/load-testing/participants.js --users 2000 --url http://localhost:3001 --pin 000000 --hold-seconds 180
 ```
 
 For staging:
 
 ```bash
-node loadtest/participants.js --users 2000 --url https://your-backend.example.com --pin 000000 --hold-seconds 300
+node tests/load-testing/participants.js --users 2000 --url https://your-backend.example.com --pin 000000 --hold-seconds 300
 ```
 
 While the load test is running:
@@ -86,7 +86,7 @@ Before testing Render, verify these production settings in the Render dashboard 
 Render rehearsal command:
 
 ```bash
-node loadtest/participants.js --users 2000 --url https://quizbee-backend-eiwt.onrender.com --pin 000000 --hold-seconds 300 --join-rate 100
+node tests/load-testing/participants.js --users 2000 --url https://quizbee-backend-eiwt.onrender.com --pin 000000 --hold-seconds 300 --join-rate 100
 ```
 
 This URL is the backend used by the current hosted frontend. Run this while manually driving the real hosted host and screen routes.

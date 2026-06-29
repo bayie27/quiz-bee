@@ -314,7 +314,12 @@ export default function Editor() {
 
   const handleExportJSON = () => {
     if (questions.length === 0) return showToast('No questions to export.', 'error');
-    const cleanQuestions = questions.map(({ _dndId, id, ...rest }) => serializeQuestion(rest));
+    const cleanQuestions = questions.map(q => {
+      const rest = { ...q };
+      delete rest._dndId;
+      delete rest.id;
+      return serializeQuestion(rest);
+    });
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(cleanQuestions, null, 2));
     downloadData(dataStr, `question_set_${selectedSetId}.json`);
   };
