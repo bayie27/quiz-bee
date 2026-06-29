@@ -1,4 +1,5 @@
 const gameState = require('../../services/gameStateManager');
+const { scheduleLobbyUpdate } = require('../lobbyBroadcaster');
 
 /**
  * Participant Socket.io Event Handlers — Phase 3: Core Game Loop
@@ -49,13 +50,8 @@ module.exports = (io, socket) => {
       section: result.participant.section,
       avatar: result.participant.avatar
     });
-
-    // Broadcast updated participant list to everyone (FR-47, FR-52)
-    io.to('game').to('host').to('screen').emit('lobby:update', {
-      participants: gameState.getParticipantList(),
-        count: gameState.getParticipantCount(),
-        roomPin: gameState.roomConfig.roomPin
-    });
+    // Debounced lobby update keeps mass joins from flooding every participant.
+    scheduleLobbyUpdate(io);
 
     console.log(`[JOIN] ${result.participant.name} (${result.participant.section}) joined — total: ${gameState.getParticipantCount()}`);
   });
@@ -105,13 +101,8 @@ module.exports = (io, socket) => {
         }
         : null
     });
-
-    // Broadcast updated count
-    io.to('game').to('host').to('screen').emit('lobby:update', {
-      participants: gameState.getParticipantList(),
-        count: gameState.getParticipantCount(),
-        roomPin: gameState.roomConfig.roomPin
-    });
+    // Debounced lobby update keeps reconnect storms from flooding every participant.
+    scheduleLobbyUpdate(io);
 
     console.log(`[REJOIN] ${result.participant.name} (${result.participant.section}) reconnected — score: ${result.participant.score}, streak: ${result.participant.streak}`);
   });
@@ -194,13 +185,8 @@ module.exports = (io, socket) => {
     const participant = gameState.handleDisconnect(socket.id, (expiredParticipant) => {
       // Grace period expired callback — participant is now permanently blocked
       console.log(`[BLOCKED] ${expiredParticipant.name} (${expiredParticipant.section}) — reconnect grace period expired, permanently blocked`);
-
-      // Broadcast updated count (they're gone for good)
-      io.to('game').to('host').to('screen').emit('lobby:update', {
-        participants: gameState.getParticipantList(),
-        count: gameState.getParticipantCount(),
-        roomPin: gameState.roomConfig.roomPin
-      });
+      // Debounced lobby update keeps disconnect storms from flooding every participant.
+      scheduleLobbyUpdate(io);
     });
 
     if (participant) {
@@ -209,13 +195,8 @@ module.exports = (io, socket) => {
         `[DISCONNECT] ${participant.name} (${participant.section}) disconnected` +
         (inGame ? ` — ${gameState.roomConfig.reconnectGraceSeconds}s grace period started` : ' — removed from lobby')
       );
-
-      // Broadcast updated count immediately
-      io.to('game').to('host').to('screen').emit('lobby:update', {
-        participants: gameState.getParticipantList(),
-        count: gameState.getParticipantCount(),
-        roomPin: gameState.roomConfig.roomPin
-      });
+      // Debounced lobby update keeps disconnect storms from flooding every participant.
+      scheduleLobbyUpdate(io);
     }
   });
 };
