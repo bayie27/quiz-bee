@@ -1,6 +1,7 @@
 const gameState = require('../../services/gameStateManager');
 const supabase = require('../../config/supabase');
 const { flushLobbyUpdate } = require('../lobbyBroadcaster');
+const { flushAnswerCount } = require('../answerCountBroadcaster');
 
 const FIRST_QUESTION_COUNTDOWN_SECONDS = 5;
 
@@ -230,12 +231,12 @@ module.exports = (io, socket) => {
     });
 
     io.to('host').emit('host:current_question', gameState.getCurrentQuestionPreview());
-    io.to('host').emit('host:answer_count', gameState.getAnswerStatus());
+    flushAnswerCount(io);
 
     gameState.startTimer(
       ({ remaining }) => {
         io.to('game').to('host').to('screen').emit('timer:tick', { remaining });
-        io.to('host').emit('host:answer_count', gameState.getAnswerStatus());
+        flushAnswerCount(io);
       },
       () => {
         const answerStatus = gameState.getAnswerStatus();
@@ -310,23 +311,42 @@ module.exports = (io, socket) => {
     const fullLeaderboard = gameState.getLeaderboard(gameState.participants.size);
 
     io.to('screen').emit('podium:play', { top5: podium });
-    io.to('game').to('host').to('screen').emit('game:ended', {
+    io.to('game').emit('game:ended', {});
+    io.to('host').to('screen').emit('game:ended', {
       finalLeaderboard: fullLeaderboard
     });
 
-    for (const [socketId, participant] of gameState.participants.entries()) {
-      io.to(socketId).emit('result:card', {
-        rank: participant.rank,
-        score: participant.score,
-        bestStreak: participant.bestStreak,
-        name: participant.name,
-        section: participant.section,
-        avatar: participant.avatar
-      });
-    }
+    emitResultCardsInBatches();
 
     persistResults();
     console.log(`[GAME] Ended - ${gameState.participants.size} participants, podium sent`);
+  }
+
+  function emitResultCardsInBatches() {
+    const entries = Array.from(gameState.participants.entries());
+    const batchSize = Number.parseInt(process.env.RESULT_CARD_BATCH_SIZE, 10) || 100;
+    let index = 0;
+
+    const emitBatch = () => {
+      const end = Math.min(index + batchSize, entries.length);
+      for (; index < end; index++) {
+        const [socketId, participant] = entries[index];
+        io.to(socketId).emit('result:card', {
+          rank: participant.rank,
+          score: participant.score,
+          bestStreak: participant.bestStreak,
+          name: participant.name,
+          section: participant.section,
+          avatar: participant.avatar
+        });
+      }
+
+      if (index < entries.length) {
+        setImmediate(emitBatch);
+      }
+    };
+
+    emitBatch();
   }
 
   async function persistResults() {

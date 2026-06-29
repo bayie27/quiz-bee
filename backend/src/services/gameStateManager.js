@@ -46,6 +46,9 @@ class GameStateManager {
     // socketId → participant data
     this.participants = new Map();
 
+    // Composite participant keys for O(1) duplicate checks during mass joins.
+    this.participantKeys = new Set();
+
     // participantId → answer data (for the *current* question only)
     this.answers = new Map();
     this.answerCount = 0;
@@ -74,6 +77,10 @@ class GameStateManager {
 
     // Whether the answer window is currently open
     this._answerWindowOpen = false;
+
+    // Ranks are recomputed lazily at reveal/leaderboard/end instead of after
+    // every answer, which avoids O(participants * answers) sorting spikes.
+    this._ranksDirty = true;
   }
 
   // ──────────────────────────────────────────────
@@ -160,10 +167,8 @@ class GameStateManager {
     }
 
     // Check duplicate name + section (FR-09)
-    for (const p of this.participants.values()) {
-      if (this._participantKey(p.name, p.section) === key) {
-        return { success: false, error: 'A participant with this name and section already exists.' };
-      }
+    if (this.participantKeys.has(key)) {
+      return { success: false, error: 'A participant with this name and section already exists.' };
     }
 
     const participantId = crypto.randomUUID();
@@ -186,6 +191,7 @@ class GameStateManager {
     };
 
     this.participants.set(socketId, participant);
+    this.participantKeys.add(key);
     return { success: true, participant };
   }
 
@@ -220,6 +226,7 @@ class GameStateManager {
       disconnectedAt: null
     };
     this.participants.set(newSocketId, participant);
+    this.participantKeys.add(key);
 
     return { success: true, participant };
   }
@@ -237,6 +244,7 @@ class GameStateManager {
 
     // Remove from active participants
     this.participants.delete(socketId);
+    this.participantKeys.delete(this._participantKey(participant.name, participant.section));
 
     // If game is in lobby, just remove them cleanly (they can rejoin normally)
     if (this.status === 'lobby') {
@@ -273,10 +281,12 @@ class GameStateManager {
     for (const [socketId, participant] of this.participants.entries()) {
       if (participant.id === participantId) {
         this.participants.delete(socketId);
+        this.participantKeys.delete(key);
         // Also block them from re-joining
         const key = this._participantKey(participant.name, participant.section);
         this.blockedParticipants.add(key);
         // Recalculate ranks after removal
+        this._ranksDirty = true;
         this.recalculateRanks();
         return { socketId, participant };
       }
@@ -454,8 +464,9 @@ class GameStateManager {
     this.answers.set(participant.id, answerData);
     this.answerCount++;
 
-    // Recalculate ranks after every submission
-    this.recalculateRanks();
+    // Rank updates are visible at reveal/leaderboard time; avoid sorting on
+    // every answer while the answer burst is in progress.
+    this._ranksDirty = true;
 
     return {
       success: true,
@@ -488,6 +499,8 @@ class GameStateManager {
    * Primary sort: score (desc). Tie-break: average answer time (asc).
    */
   recalculateRanks() {
+    if (!this._ranksDirty) return;
+
     const sorted = Array.from(this.participants.values()).sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       // Tie-break: faster average answer time wins
@@ -503,6 +516,8 @@ class GameStateManager {
     sorted.forEach((p, index) => {
       p.rank = index + 1;
     });
+
+    this._ranksDirty = false;
   }
 
   // ──────────────────────────────────────────────
@@ -608,6 +623,7 @@ class GameStateManager {
    * (base + speed bonus + streak multiplier), updated running total, rank.
    */
   getParticipantScoreUpdates() {
+    this.recalculateRanks();
     const updates = new Map();
 
     for (const [socketId, participant] of this.participants.entries()) {
@@ -695,6 +711,7 @@ class GameStateManager {
    */
   endGame() {
     this.status = 'ended';
+    this._ranksDirty = true;
     this._answerWindowOpen = false;
     if (this.timerState.intervalId) {
       clearInterval(this.timerState.intervalId);
