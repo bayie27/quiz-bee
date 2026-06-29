@@ -1,5 +1,6 @@
 const gameState = require('../../services/gameStateManager');
 const supabase = require('../../config/supabase');
+const { flushLobbyUpdate } = require('../lobbyBroadcaster');
 
 const FIRST_QUESTION_COUNTDOWN_SECONDS = 5;
 
@@ -299,13 +300,8 @@ module.exports = (io, socket) => {
 
     console.log(`[REVEAL:${source}] Correct: ${correctAnswer} | Answered: ${totalAnswered}/${totalParticipants} | No answer: ${noAnswerCount}`);
   }
-
   function broadcastLobbyUpdate() {
-    io.to('game').to('host').to('screen').emit('lobby:update', {
-      participants: gameState.getParticipantList(),
-      count: gameState.getParticipantCount(),
-      roomPin: gameState.roomConfig.roomPin
-    });
+    flushLobbyUpdate(io);
   }
 
   function endGameSequence() {
