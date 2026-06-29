@@ -46,6 +46,9 @@ class GameStateManager {
     // socketId → participant data
     this.participants = new Map();
 
+    // Composite participant keys for O(1) duplicate checks during mass joins.
+    this.participantKeys = new Set();
+
     // participantId → answer data (for the *current* question only)
     this.answers = new Map();
     this.answerCount = 0;
@@ -164,10 +167,8 @@ class GameStateManager {
     }
 
     // Check duplicate name + section (FR-09)
-    for (const p of this.participants.values()) {
-      if (this._participantKey(p.name, p.section) === key) {
-        return { success: false, error: 'A participant with this name and section already exists.' };
-      }
+    if (this.participantKeys.has(key)) {
+      return { success: false, error: 'A participant with this name and section already exists.' };
     }
 
     const participantId = crypto.randomUUID();
@@ -190,6 +191,7 @@ class GameStateManager {
     };
 
     this.participants.set(socketId, participant);
+    this.participantKeys.add(key);
     return { success: true, participant };
   }
 
@@ -224,6 +226,7 @@ class GameStateManager {
       disconnectedAt: null
     };
     this.participants.set(newSocketId, participant);
+    this.participantKeys.add(key);
 
     return { success: true, participant };
   }
@@ -241,6 +244,7 @@ class GameStateManager {
 
     // Remove from active participants
     this.participants.delete(socketId);
+    this.participantKeys.delete(this._participantKey(participant.name, participant.section));
 
     // If game is in lobby, just remove them cleanly (they can rejoin normally)
     if (this.status === 'lobby') {
@@ -277,6 +281,7 @@ class GameStateManager {
     for (const [socketId, participant] of this.participants.entries()) {
       if (participant.id === participantId) {
         this.participants.delete(socketId);
+        this.participantKeys.delete(key);
         // Also block them from re-joining
         const key = this._participantKey(participant.name, participant.section);
         this.blockedParticipants.add(key);

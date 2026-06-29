@@ -316,19 +316,37 @@ module.exports = (io, socket) => {
       finalLeaderboard: fullLeaderboard
     });
 
-    for (const [socketId, participant] of gameState.participants.entries()) {
-      io.to(socketId).emit('result:card', {
-        rank: participant.rank,
-        score: participant.score,
-        bestStreak: participant.bestStreak,
-        name: participant.name,
-        section: participant.section,
-        avatar: participant.avatar
-      });
-    }
+    emitResultCardsInBatches();
 
     persistResults();
     console.log(`[GAME] Ended - ${gameState.participants.size} participants, podium sent`);
+  }
+
+  function emitResultCardsInBatches() {
+    const entries = Array.from(gameState.participants.entries());
+    const batchSize = Number.parseInt(process.env.RESULT_CARD_BATCH_SIZE, 10) || 100;
+    let index = 0;
+
+    const emitBatch = () => {
+      const end = Math.min(index + batchSize, entries.length);
+      for (; index < end; index++) {
+        const [socketId, participant] = entries[index];
+        io.to(socketId).emit('result:card', {
+          rank: participant.rank,
+          score: participant.score,
+          bestStreak: participant.bestStreak,
+          name: participant.name,
+          section: participant.section,
+          avatar: participant.avatar
+        });
+      }
+
+      if (index < entries.length) {
+        setImmediate(emitBatch);
+      }
+    };
+
+    emitBatch();
   }
 
   async function persistResults() {
