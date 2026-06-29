@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 
 export default function ScreenQuestion() {
-  const { currentQuestion, skippedQuestion, revealData, isGameEnded, timer, socket, gameCountdown } = useSocket();
+  const { currentQuestion, skippedQuestion, revealData, isGameEnded, timer, gameCountdown } = useSocket();
   const navigate = useNavigate();
 
   useEffect(() => { if (revealData) navigate('/screen/reveal'); if (isGameEnded) navigate('/screen/podium'); }, [revealData, isGameEnded, navigate]);
